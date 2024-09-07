@@ -2,3 +2,5 @@
 .env-non-dev
 venv
 .idea
+*.pyc
+__pycache__/
