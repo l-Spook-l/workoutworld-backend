@@ -1,12 +1,16 @@
-from fastapi import FastAPI, Depends
 import uvicorn
-from src.auth.models import User
-from .auth.base_config import current_user
-from .workouts.router import router as router_workout
-from .auth.router import router as router_user
-from .admin.router import router as router_admin
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI, Depends
+from src.auth.models import User
+from src.workouts.models import Workout
+from src.auth.base_config import current_user
+from src.workouts.router import router as router_workout
+from src.auth.router import router as router_user
+from src.admin.router import router as router_admin
+
+from sqladmin import Admin, ModelView
+from .database import engine
 
 app = FastAPI(
     title="Workout App"
@@ -44,5 +48,23 @@ app.add_middleware(
     #                "Authorization"],
 )
 
+
+admin = Admin(app, engine)
+
+
+class UserAdmin(ModelView, model=User):
+    column_list = [User.id, User.username]
+
+
+class WorkoutAdmin(ModelView, model=Workout):
+    column_list = [Workout.id, Workout.name]
+
+
+admin.add_view(UserAdmin)
+admin.add_view(WorkoutAdmin)
+
+
 if __name__ == "__main__":
+    # uvicorn src.main:app --reload
     uvicorn.run("main:app", port=8000, host="0.0.0.0", reload=True)
+
