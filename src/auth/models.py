@@ -18,6 +18,9 @@ class Role(Base):
 
     user: Mapped[list["User"]] = relationship(back_populates="role")
 
+    def __str__(self):
+        return self.name
+
 
 class User(SQLAlchemyBaseUserTable[int], Base):
     __tablename__ = "user_table"
@@ -42,4 +45,4 @@ class User(SQLAlchemyBaseUserTable[int], Base):
     set: Mapped[list["Set"]] = relationship(back_populates="user", cascade="all")
 
     def __str__(self):
-        return self.username
+        return self.first_name
