@@ -5,13 +5,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm.exc import NoResultFound
 from src.core.database import get_async_session
 from fastapi.exceptions import HTTPException
-from ..auth.base_config import current_user
+from src.auth.base_config import current_user
 from pydantic import ValidationError
 import aiofiles
 from uuid import uuid4
 import os
 from .models import Workout, Exercise, Set, added_workouts_association, Exercise_photo, DifficultyWorkout
-from ..auth.models import User
+from src.auth.models import User
 from .schemas import WorkoutCreate, ExerciseCreate, SetCreate, WorkoutUpdate, ExerciseUpdate, SetUpdate
 
 router = APIRouter(

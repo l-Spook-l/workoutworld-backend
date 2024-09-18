@@ -2,11 +2,11 @@ from fastapi import Depends
 from fastapi_users.db import SQLAlchemyUserDatabase
 from sqlalchemy.ext.asyncio import AsyncSession
 from .models import User
-from src.database import get_async_session
+from src.core.database import get_async_session
 from email.message import EmailMessage
 from dotenv import load_dotenv
 import aiosmtplib
-from src.config import SMTP_USER_EMAIL, SMTP_PASSWORD, CLIENT_IP, CLIENT_PORT
+from src.core.config import SMTP_USER_EMAIL, SMTP_PASSWORD, CLIENT_IP, CLIENT_PORT
 
 load_dotenv()
 
