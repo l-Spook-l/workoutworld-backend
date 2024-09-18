@@ -7,7 +7,7 @@ from sqlalchemy.orm import relationship, Mapped, mapped_column
 
 from fastapi_users.db import SQLAlchemyBaseUserTable
 
-from src.database import Base
+from src.core.database import Base
 
 
 class Role(Base):

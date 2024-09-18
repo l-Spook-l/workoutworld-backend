@@ -3,7 +3,7 @@ from sqlalchemy import select, insert, update, func, delete
 from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm.exc import NoResultFound
-from src.database import get_async_session
+from src.core.database import get_async_session
 from fastapi.exceptions import HTTPException
 from ..auth.base_config import current_user
 from pydantic import ValidationError

@@ -6,7 +6,7 @@ from fastapi.exceptions import HTTPException
 from .manager import UserManager
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from src.database import get_async_session
+from src.core.database import get_async_session
 from .utils import get_user_db, send_token_by_email, send_message_to_admin
 import time
 

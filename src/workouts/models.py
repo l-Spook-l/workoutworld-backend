@@ -5,7 +5,7 @@ from datetime import datetime
 from sqlalchemy import Column, String, ForeignKey, Table
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 
-from src.database import Base
+from src.core.database import Base
 
 added_workouts_association = Table(
     "added_workouts_association",
