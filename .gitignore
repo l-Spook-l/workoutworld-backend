@@ -4,3 +4,4 @@ venv
 .idea
 *.pyc
 __pycache__/
+docker-compose-local.yml
