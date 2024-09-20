@@ -21,5 +21,7 @@ DB_NAME_TEST = os.environ.get("DB_NAME_TEST")
 
 SECRET_KEY = os.environ.get("SECRET_KEY")
 
+SENTRY_DNS = os.environ.get("SENTRY_DNS")
+
 SMTP_USER_EMAIL = os.environ.get("SMTP_USER_EMAIL")
 SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD")

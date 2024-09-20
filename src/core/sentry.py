@@ -1,8 +1,8 @@
 import sentry_sdk
-
+from src.core.config import SENTRY_DNS
 
 sentry_sdk.init(
-    dsn="https://c12ef8b4f545287909daffa3b97d66f6@o4507941131583488.ingest.de.sentry.io/4507941149343824",
+    dsn=SENTRY_DNS,
     traces_sample_rate=1.0,
     profiles_sample_rate=1.0,
 )
