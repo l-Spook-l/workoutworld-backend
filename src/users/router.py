@@ -15,15 +15,15 @@ router = APIRouter()
 
 # Authorization
 router.include_router(
-    fastapi_users.get_auth_router(auth_backend), prefix="/auth/jwt", tags=["auth"],
+    fastapi_users.get_auth_router(auth_backend), prefix="/users/jwt", tags=["users"],
 )
 # Registration
 router.include_router(
-    fastapi_users.get_register_router(UserRead, UserCreate), prefix="/auth", tags=["auth"],
+    fastapi_users.get_register_router(UserRead, UserCreate), prefix="/users", tags=["users"],
 )
 # Password reset
 router.include_router(
-    fastapi_users.get_reset_password_router(), prefix="/auth", tags=["auth"],
+    fastapi_users.get_reset_password_router(), prefix="/users", tags=["users"],
 )
 # User data update
 router.include_router(

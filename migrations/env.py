@@ -6,7 +6,7 @@ from src.core.config import DB_NAME, DB_PORT, DB_HOST, DB_PASSWORD, DB_USER
 from src.core.database import Base
 
 # Models need to be present to be visible during migration.
-from src.auth.models import Role, User
+from src.users.models import Role, User
 from src.workouts.models import Workout, Exercise, Set, DifficultyWorkout
 
 config = context.config

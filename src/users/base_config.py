@@ -7,7 +7,7 @@ from .manager import get_user_manager
 from .models import User
 
 # Cookie configuration
-bearer_transport = BearerTransport(tokenUrl="auth/jwt/login")
+bearer_transport = BearerTransport(tokenUrl="users/jwt/login")
 
 
 # JWT

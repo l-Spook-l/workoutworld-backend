@@ -1,9 +1,9 @@
 import uvicorn
 from fastapi.staticfiles import StaticFiles
 from fastapi import FastAPI, Depends
-from src.auth.models import User
-from src.auth.base_config import current_user
-from src.auth.router import router as router_user
+from src.users.models import User
+from src.users.base_config import current_user
+from src.users.router import router as router_user
 from src.workouts.router import router as router_workout
 
 from src.admin.admin import init_admin
