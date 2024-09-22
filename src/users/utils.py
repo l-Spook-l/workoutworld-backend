@@ -30,17 +30,3 @@ async def send_token_by_email(email, token):
 
     await aiosmtplib.send(message, hostname="smtp.gmail.com", port=465, use_tls=True, username=sender,
                           password=password)
-
-
-async def send_message_to_admin(name, email, user_message):
-    sender = SMTP_USER_EMAIL
-    recipient = SMTP_USER_EMAIL
-    password = SMTP_PASSWORD
-    message = EmailMessage()
-    message["From"] = sender
-    message["To"] = recipient
-    message["Subject"] = "User send email"
-    message.set_content(f"This user {name}, his email {email}, send  message :{user_message}")
-
-    await aiosmtplib.send(message, hostname="smtp.gmail.com", port=465, use_tls=True, username=sender,
-                          password=password)
