@@ -1,16 +1,19 @@
+import time
 from fastapi import APIRouter, Depends
-from .base_config import auth_backend, fastapi_users
-from .models import User
-from .schemas import UserRead, UserCreate, UserUpdate, PasswordResetRequest, SendMessageAdmin
-from fastapi.exceptions import HTTPException
-from .manager import UserManager
+from fastapi import Request, HTTPException
+from redis.asyncio import Redis
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.core.database import get_async_session
-from .utils import get_user_db, send_token_by_email, send_message_to_admin
-import time
+from src.core.redis import get_redis_client
+from .base_config import auth_backend, fastapi_users
+from .models import User
+from .schemas import UserRead, UserCreate, UserUpdate, PasswordResetRequest, SendMessageAdmin
+from .manager import UserManager
+from .utils import get_user_db, send_token_by_email
+from .tasks import send_message_to_admin
 
-last_sent_time = 0
+
 router = APIRouter()
 
 # Authorization
@@ -47,16 +50,35 @@ async def request_password_reset(request: PasswordResetRequest, session: AsyncSe
 
 
 @router.post('/send-message-admin')
-async def send_message_admin(message: SendMessageAdmin):
-    global last_sent_time
+async def send_message_admin(
+        message: SendMessageAdmin,
+        request: Request,
+        redis_client: Redis = Depends(get_redis_client)
+):
+    # Получаем IP-адрес пользователя
+    user_ip = request.client.host
+    user_key = f"user_last_message:{user_ip}"  # Используем IP-адрес как ключ
 
     current_time = time.time()
-    time_difference = current_time - last_sent_time
 
-    if time_difference >= 180:
-        await send_message_to_admin(message.name, message.email, message.message)
-        last_sent_time = current_time
-        return {'status': 'success'}
-    else:
-        raise HTTPException(status_code=429, detail='You have already sent a message. '
-                                                    'Please wait for 3 minutes before sending another message')
+    # Попытка получить время последнего сообщения
+    last_sent_time = await redis_client.get(user_key)
+    if last_sent_time is not None:
+        time_difference = current_time - float(last_sent_time)
+        if time_difference < 180:
+            raise HTTPException(status_code=429, detail='You have already sent a message. '
+                                                        'Please wait for 3 minutes before sending another message.')
+
+    try:
+        # Сохранение текущего времени отправки
+        await redis_client.set(user_key, current_time, ex=180)  # Время жизни ключа – 3 минуты
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Redis error: {str(e)}")
+
+    try:
+        # Отправка задачи в Celery
+        send_message_to_admin.delay(message.name, message.email, message.message)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Celery error: {str(e)}")
+
+    return {'status': 'success'}
