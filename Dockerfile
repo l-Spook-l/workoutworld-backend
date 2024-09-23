@@ -1,4 +1,4 @@
-FROM python:3.10-slim
+FROM python:3.12-slim
 
 RUN mkdir /fastapi_app
 
@@ -9,4 +9,4 @@ RUN pip install -r requirements.txt
 
 COPY . .
 
-RUN chmod a+x docker/*.sh
+RUN chmod a+x app_run.sh
