@@ -5,3 +5,4 @@ venv
 *.pyc
 __pycache__/
 docker-compose-local.yml
+structure.txt
