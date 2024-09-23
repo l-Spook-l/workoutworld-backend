@@ -19,6 +19,8 @@ DB_HOST_TEST = os.environ.get("DB_HOST_TEST")
 DB_PORT_TEST = os.environ.get("DB_PORT_TEST")
 DB_NAME_TEST = os.environ.get("DB_NAME_TEST")
 
+REDIS_PORT = os.environ.get("REDIS_PORT")
+
 SECRET_KEY = os.environ.get("SECRET_KEY")
 
 SENTRY_DNS = os.environ.get("SENTRY_DNS")
