@@ -1,53 +1,93 @@
-version: "3.7"
 services:
   db:
     image: postgres:15.3-alpine3.18
     container_name: db_app
     command: -p 5435
-    volumes:
-      - pgdata:/var/lib/postgresql/data
     expose:
       - 5435
+    volumes:
+      - pgdata:/var/lib/postgresql/data
     env_file:
-      - ./FastAPI-React-WorkoutWorld-website-server/.env-non-dev
+      - .env-non-dev
     networks:
       - mynetwork
 
-  server_app:
-    build:
-      context: ./FastAPI-React-WorkoutWorld-website-server/
-    env_file:
-      - ./FastAPI-React-WorkoutWorld-website-server/.env-non-dev
-    container_name: fastapi_app
-    command: ["/fastapi_app/docker/app.sh"]
+  redis:
+    image: redis:7
+    container_name: redis_app
     ports:
-      - 9999:8000
+      - "6379:6379"
+    expose:
+      - "6379"
     networks:
       - mynetwork
     depends_on:
       - db
 
-  nginx:
-    image: lspookl/react_app
-    depends_on:
-        - server_app
-    container_name: client_react_app
+  server_app:
+    build:
+      context: .
+    env_file:
+      - .env-non-dev
+    container_name: fastapi_app
+#    command: ["sh", "./docker/app_run.sh"]
+#    command: ./app_run.sh
+    command: ["./app_run.sh"]
     ports:
-        - 3000:80
-#    volumes:
-#      - etc-letsencrypt:/etc/letsencrypt
+      - "9999:8000"
     networks:
-        - mynetwork
+      - mynetwork
+    depends_on:
+      - redis
 
-#  certbot:
-#    image: certbot/certbot
-#    depends_on:
-#      - nginx
-#    container_name: certbot
-#    volumes:
-#      - etc-letsencrypt:/etc/letsencrypt
-#      - www-html:/var/www/html
-#    command: certonly --webroot --webroot-path=/var/www/html --email uaspookua@gmail.com --agree-tos --no-eff-email -d vm4791907.25ssd.had.wf
+  celery:
+    build: .
+    container_name: celery_app
+    command: ["./celery.sh", "celery"]
+    networks:
+      - mynetwork
+    depends_on:
+      - redis
+
+  flower:
+    build: .
+    command: ["./celery.sh", "flower"]
+    ports:
+      - "5555:5555"
+    networks:
+      - mynetwork
+    depends_on:
+      - celery
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+#    command:
+#      - "--config.file=/etc/prometheus/prometheus.yml"  # Явно указываем путь к конфигу
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml  # конфигурационный файл Prometheus
+      - prometheus_data:/prometheus  # Volume для сохранения данных Prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - mynetwork
+    depends_on:
+      - server_app
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - grafana-config:/etc/grafana
+    ports:
+      - "3030:3000"
+#    environment:
+#      - .env-non-dev
+    networks:
+      - mynetwork
+    depends_on:
+      - prometheus
 
 networks:
   mynetwork:
@@ -55,5 +95,68 @@ networks:
 
 volumes:
   pgdata:
-#  www-html:
-#  etc-letsencrypt:
+  prometheus_data:
+  grafana_data:
+  grafana-config:
+
+
+
+#version: "3.7"
+#services:
+#  db:
+#    image: postgres:15.3-alpine3.18
+#    container_name: db_app
+#    command: -p 5435
+#    volumes:
+#      - pgdata:/var/lib/postgresql/data
+#    expose:
+#      - 5435
+#    env_file:
+#      - ./FastAPI-React-WorkoutWorld-website-server/.env-non-dev
+#    networks:
+#      - mynetwork
+#
+#  server_app:
+#    build:
+#      context: ./FastAPI-React-WorkoutWorld-website-server/
+#    env_file:
+#      - ./FastAPI-React-WorkoutWorld-website-server/.env-non-dev
+#    container_name: fastapi_app
+#    command: ["/fastapi_app/grafana_storage/app_run.sh"]
+#    ports:
+#      - 9999:8000
+#    networks:
+#      - mynetwork
+#    depends_on:
+#      - db
+#
+#  nginx:
+#    image: lspookl/react_app
+#    depends_on:
+#        - server_app
+#    container_name: client_react_app
+#    ports:
+#        - 3000:80
+##    volumes:
+##      - etc-letsencrypt:/etc/letsencrypt
+#    networks:
+#        - mynetwork
+#
+##  certbot:
+##    image: certbot/certbot
+##    depends_on:
+##      - nginx
+##    container_name: certbot
+##    volumes:
+##      - etc-letsencrypt:/etc/letsencrypt
+##      - www-html:/var/www/html
+##    command: certonly --webroot --webroot-path=/var/www/html --email uaspookua@gmail.com --agree-tos --no-eff-email -d vm4791907.25ssd.had.wf
+#
+#networks:
+#  mynetwork:
+#    driver: bridge
+#
+#volumes:
+#  pgdata:
+##  www-html:
+##  etc-letsencrypt:
