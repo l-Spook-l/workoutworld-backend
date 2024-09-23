@@ -38,11 +38,13 @@ router.include_router(
 async def request_password_reset(request: PasswordResetRequest, session: AsyncSession = Depends(get_async_session)):
     query_user = await session.execute(select(User).filter(User.email == request.email))
     user = query_user.one()[0]
+    # user = query_user.scalars().first()  еще один вариант
 
     if not user:
         raise HTTPException(status_code=404, detail="Workout not found")
 
-    user_manager = UserManager(get_user_db)
+    user_db = await get_user_db(session)
+    user_manager = UserManager(user_db)
     reset_token = await user_manager.forgot_password(user)
     await send_token_by_email(user.email, reset_token)
 
