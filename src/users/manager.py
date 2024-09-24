@@ -7,7 +7,7 @@ from fastapi_users import IntegerIDMixin
 from .models import User
 from .utils import get_user_db
 from fastapi_users.jwt import generate_jwt
-from src.config import SECRET_KEY
+from src.core.config import SECRET_KEY
 
 
 class UserManager(IntegerIDMixin, BaseUserManager[User, int]):

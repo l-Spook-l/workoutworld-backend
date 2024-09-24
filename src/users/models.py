@@ -7,7 +7,7 @@ from sqlalchemy.orm import relationship, Mapped, mapped_column
 
 from fastapi_users.db import SQLAlchemyBaseUserTable
 
-from src.database import Base
+from src.core.database import Base
 
 
 class Role(Base):
@@ -17,6 +17,9 @@ class Role(Base):
     name: Mapped[str] = mapped_column(String(length=99), nullable=False)
 
     user: Mapped[list["User"]] = relationship(back_populates="role")
+
+    def __str__(self):
+        return self.name
 
 
 class User(SQLAlchemyBaseUserTable[int], Base):
@@ -42,4 +45,4 @@ class User(SQLAlchemyBaseUserTable[int], Base):
     set: Mapped[list["Set"]] = relationship(back_populates="user", cascade="all")
 
     def __str__(self):
-        return self.username
+        return self.first_name

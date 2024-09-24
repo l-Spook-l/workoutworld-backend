@@ -5,7 +5,7 @@ from datetime import datetime
 from sqlalchemy import Column, String, ForeignKey, Table
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 
-from src.database import Base
+from src.core.database import Base
 
 added_workouts_association = Table(
     "added_workouts_association",
@@ -31,6 +31,9 @@ class Workout(Base):
     exercise: Mapped[list["Exercise"]] = relationship(back_populates="workout", cascade="all, delete-orphan",
                                                       order_by="Exercise.number_in_workout")
 
+    def __str__(self):
+        return self.name
+
 
 class Exercise(Base):
     __tablename__ = "exercise_table"
@@ -49,6 +52,9 @@ class Exercise(Base):
     set: Mapped[list["Set"]] = relationship(back_populates="exercise", cascade="all, delete-orphan")
     photo: Mapped[list["Exercise_photo"]] = relationship(back_populates="exercise", cascade="all, delete-orphan")
 
+    def __str__(self):
+        return self.name
+
 
 class Set(Base):
     __tablename__ = "set_table"
@@ -62,6 +68,9 @@ class Set(Base):
     exercise: Mapped["Exercise"] = relationship(back_populates="set")
     user: Mapped["User"] = relationship(back_populates="set")
 
+    def __str__(self):
+        return f"Set with {self.repetition} repetitions and {self.weight} kg" if self.repetition and self.weight else "Incomplete Set"
+
 
 class Exercise_photo(Base):
     __tablename__ = "exercise_photo_table"
@@ -71,8 +80,14 @@ class Exercise_photo(Base):
 
     exercise: Mapped["Exercise"] = relationship(back_populates="photo")
 
+    def __str__(self):
+        return self.photo or "No photo"
+
 
 class DifficultyWorkout(Base):
     __tablename__ = "difficulty_workout_table"
     id: Mapped[int] = mapped_column(primary_key=True, index=True, unique=True)
     difficulty: Mapped[str]
+
+    def __str__(self):
+        return self.difficulty
