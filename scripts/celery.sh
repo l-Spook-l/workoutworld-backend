@@ -1,8 +1,8 @@
 #!/bin/bash
 
 
-if [[ "${1}" == "celery" ]]; then
+if [ "${1}" = "celery" ]; then
   celery --app=src.core.celery:celery_app worker -l INFO
-elif [[ "${1}" == "flower" ]]; then
+elif [ "${1}" = "flower" ]; then
   celery --app=src.core.celery:celery_app flower
-  fi
+fi
