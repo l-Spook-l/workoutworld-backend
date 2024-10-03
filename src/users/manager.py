@@ -1,13 +1,11 @@
 from typing import Optional
-
 from fastapi import Depends, Request
 from fastapi_users import BaseUserManager, exceptions, models, schemas
 from fastapi_users import IntegerIDMixin
-
-from .models import User
-from .utils import get_user_db
 from fastapi_users.jwt import generate_jwt
 from src.core.config import SECRET_KEY
+from .models import User
+from .utils import get_user_db
 
 
 class UserManager(IntegerIDMixin, BaseUserManager[User, int]):

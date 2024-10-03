@@ -1,6 +1,5 @@
 from fastapi_users.authentication import BearerTransport, AuthenticationBackend
 from fastapi_users.authentication import JWTStrategy
-
 from fastapi_users import FastAPIUsers
 from src.core.config import SECRET_KEY
 from .manager import get_user_manager
