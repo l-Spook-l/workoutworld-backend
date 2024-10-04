@@ -3,6 +3,7 @@ services:
     image: postgres:15.3-alpine3.18
     container_name: db_app
     command: -p 5435
+    restart: always
     expose:
       - 5435
     volumes:
