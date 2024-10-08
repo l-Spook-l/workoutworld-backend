@@ -1,21 +1,17 @@
 import asyncio
-from typing import AsyncGenerator
-
 import pytest
-from fastapi.testclient import TestClient
+from typing import AsyncGenerator
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
-
-from src.core.database import get_async_session
-from src.core.config import (DB_HOST_TEST, DB_NAME_TEST, DB_PASSWORD_TEST, DB_PORT_TEST,
-                             DB_USER_TEST)
 from src.main import app
+from src.core.database import get_async_session
+from src.core.config import DATABASE_URL_TEST
+from src.core.database import Base
 
-DATABASE_URL_TEST = f"postgresql+asyncpg://{DB_USER_TEST}:{DB_PASSWORD_TEST}@{DB_HOST_TEST}:{DB_PORT_TEST}/{DB_NAME_TEST}"
 
 engine_test = create_async_engine(DATABASE_URL_TEST, poolclass=NullPool)
-async_session_maker = async_sessionmaker(engine_test, expire_on_commit=False)
+async_session_maker = async_sessionmaker(bind=engine_test, expire_on_commit=False)
 
 
 async def override_get_async_session() -> AsyncGenerator[AsyncSession, None]:
@@ -26,15 +22,21 @@ async def override_get_async_session() -> AsyncGenerator[AsyncSession, None]:
 app.dependency_overrides[get_async_session] = override_get_async_session
 
 
+@pytest.fixture(autouse=True, scope="session")  # создать и удалить бд для тестов
+async def prepare_database():
+    async with engine_test.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    yield
+    async with engine_test.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
+
+
 @pytest.fixture(scope='session')
-def event_loop(request):
+def event_loop():
     """Create an instance of the default event loop for each test case."""
-    loop = asyncio.get_event_loop_policy().new_event_loop()
+    loop = asyncio.new_event_loop()
     yield loop
     loop.close()
-
-
-client = TestClient(app)
 
 
 @pytest.fixture(scope="session")
