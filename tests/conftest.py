@@ -1,12 +1,17 @@
 import asyncio
+import jwt
+import time
 import pytest
 from typing import AsyncGenerator
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
+from sqlalchemy import insert
 from src.main import app
+from src.users.models import Role
 from src.core.database import get_async_session
 from src.core.config import DATABASE_URL_TEST
+from src.core.config import SECRET_KEY
 from src.core.database import Base
 
 
@@ -43,3 +48,14 @@ def event_loop():
 async def ac() -> AsyncGenerator[AsyncClient, None]:
     async with AsyncClient(app=app, base_url="http://test") as ac:
         yield ac
+
+
+def generate_jwt_token(user_id: int):
+    payload = {
+        "sub": str(user_id),  # идентификатор пользователя
+        "aud": ["fastapi-users:auth"],
+        "exp": int(time.time()) + 2592000  # время жизни токена
+    }
+
+    token = jwt.encode(payload, SECRET_KEY, algorithm="HS256")
+    return token
