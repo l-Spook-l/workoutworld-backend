@@ -51,3 +51,13 @@ async def test_register_user(ac: AsyncClient):
         assert registered_user.phone == user_data["phone"], "Телефон не совпадает."
         assert registered_user.is_superuser == user_data["is_superuser"], "Статус суперпользователя не совпадает."
         assert registered_user.is_active == user_data["is_active"], "Статус активности не совпадает."
+
+
+async def test_login(ac: AsyncClient):
+    response = await ac.post("/api/users/jwt/login", data={
+        "username": "user1@example.com",
+        "password": "password_test"
+    })
+    assert response.status_code == 200
+    token = response.json().get("access_token")
+    assert token is not None
