@@ -61,3 +61,12 @@ async def test_login(ac: AsyncClient):
     assert response.status_code == 200
     token = response.json().get("access_token")
     assert token is not None
+
+
+async def test_get_user(ac: AsyncClient):
+    token = generate_jwt_token(user_id=1)
+    headers = {"Authorization": f"Bearer {token}"}
+    response = await ac.get("/api/users/me",  headers=headers)
+
+    assert response.status_code == 200
+    print('get user response', response.json())
