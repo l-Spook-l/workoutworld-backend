@@ -132,6 +132,21 @@ async def test_login(ac: AsyncClient):
     assert token is not None
 
 
+@pytest.mark.parametrize("user_data, expected_status_code, expected_detail", [
+    ({
+         "username": "wrong@example.com",
+         "password": "wrong"
+     }, 400, {'detail': "LOGIN_BAD_CREDENTIALS"}),
+    ({
+         "username": "user1@example.com",
+         "password": "wrong"
+     }, 400, {'detail': "LOGIN_BAD_CREDENTIALS"}),
+])
+async def test_login_validation_error(ac: AsyncClient, user_data, expected_status_code, expected_detail):
+    response = await ac.post("/api/users/jwt/login", data=user_data)
+    assert response.status_code == expected_status_code
+
+
 async def test_get_user(ac: AsyncClient):
     token = generate_jwt_token(user_id=1)
     headers = {"Authorization": f"Bearer {token}"}
