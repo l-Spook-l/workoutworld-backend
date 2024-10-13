@@ -22,8 +22,8 @@ class UserRead(schemas.BaseUser[int]):
 
 
 class UserCreate(schemas.BaseUserCreate):
-    first_name: str
-    last_name: str
+    first_name: str = Field(min_length=5)
+    last_name: str = Field(min_length=5)
     # email: str
     phone: str
     password: str = Field(min_length=8)
