@@ -125,7 +125,7 @@ async def test_register_user_validation_error(ac: AsyncClient, user_data, expect
 async def test_login(ac: AsyncClient):
     response = await ac.post("/api/users/jwt/login", data={
         "username": "user1@example.com",
-        "password": "password_test"
+        "password": "valid_password"
     })
     assert response.status_code == 200
     token = response.json().get("access_token")
@@ -150,7 +150,10 @@ async def test_login_validation_error(ac: AsyncClient, user_data, expected_statu
 async def test_get_user(ac: AsyncClient):
     token = generate_jwt_token(user_id=1)
     headers = {"Authorization": f"Bearer {token}"}
-    response = await ac.get("/api/users/me",  headers=headers)
+    response = await ac.get("/api/users/me", headers=headers)
 
     assert response.status_code == 200
+    assert response.json() == {'id': 1, 'email': 'user1@example.com', 'is_active': True, 'is_superuser': False,
+                               'is_verified': False, 'first_name': 'User1_first name', 'last_name': 'User1_last name',
+                               'phone': '0123456789', 'role_id': 2}
     print('get user response', response.json())
