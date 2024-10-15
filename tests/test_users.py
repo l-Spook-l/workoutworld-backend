@@ -5,7 +5,7 @@ from src.users.models import Role, User
 from .conftest import async_session_maker, generate_jwt_token
 
 
-async def test_roles():
+async def test_add_roles():
     async with async_session_maker() as session:
         stmt = insert(Role).values(id=1, name="admin")
         await session.execute(stmt)
