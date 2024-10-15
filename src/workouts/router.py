@@ -116,6 +116,10 @@ async def add_workout_to_user(user_id: int, workout_id: int, user: User = Depend
         (added_workouts_association.c.workout_table == workout_id)
     )
     result_existing = await session.execute(existing_association)
+
+    if user.id == user_id:
+        raise HTTPException(status_code=400, detail="This workout cannot be added to the workout creator")
+
     if result_existing.scalar():
         raise HTTPException(status_code=400, detail="This workout is already added to the user")
 
