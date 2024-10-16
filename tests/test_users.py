@@ -157,13 +157,29 @@ class TestLoginUser:
         assert response.json() == expected_detail
 
 
-async def test_get_user(ac: AsyncClient):
-    token = generate_jwt_token(user_id=1)
-    headers = {"Authorization": f"Bearer {token}"}
-    response = await ac.get("/api/users/me", headers=headers)
+class TestGetUser:
+    async def test_get_user(self, ac: AsyncClient):
+        token = generate_jwt_token(user_id=1)
+        headers = {"Authorization": f"Bearer {token}"}
+        response = await ac.get("/api/users/me", headers=headers)
 
-    assert response.status_code == 200
-    assert response.json() == {'id': 1, 'email': 'user1@example.com', 'is_active': True, 'is_superuser': False,
-                               'is_verified': False, 'first_name': 'User1_first name', 'last_name': 'User1_last name',
-                               'phone': '0123456789', 'role_id': 2}
-    print('get user response', response.json())
+        assert response.status_code == 200
+        assert response.json() == {'id': 1, 'email': 'user1@example.com', 'is_active': True, 'is_superuser': False,
+                                   'is_verified': False, 'first_name': 'User1_first name',
+                                   'last_name': 'User1_last name',
+                                   'phone': '0123456789', 'role_id': 2}
+
+    @pytest.mark.parametrize("token, expected_status_code, expected_detail", [
+        (None, 401, {'detail': 'Unauthorized'}),
+        ("invalid_token", 401, {'detail': 'Unauthorized'}),
+    ])
+    async def test_get_user_errors(self, ac: AsyncClient, token, expected_status_code, expected_detail):
+        headers = {}
+        if token:
+            headers = {"Authorization": f"Bearer {token}"}
+
+        response = await ac.get("/api/users/me", headers=headers)
+
+        assert response.status_code == expected_status_code
+        assert response.json() == expected_detail
+
