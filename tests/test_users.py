@@ -131,29 +131,30 @@ class TestRegisterUser:
         assert response.json() == expected_detail
 
 
-async def test_login(ac: AsyncClient):
-    response = await ac.post("/api/users/jwt/login", data={
-        "username": "user1@example.com",
-        "password": "valid_password"
-    })
-    assert response.status_code == 200
-    token = response.json().get("access_token")
-    assert token is not None
+class TestLoginUser:
+    async def test_login(self, ac: AsyncClient):
+        response = await ac.post("/api/users/jwt/login", data={
+            "username": "user1@example.com",
+            "password": "valid_password"
+        })
+        assert response.status_code == 200
+        token = response.json().get("access_token")
+        assert token is not None
 
-
-@pytest.mark.parametrize("user_data, expected_status_code, expected_detail", [
-    ({
-         "username": "wrong@example.com",
-         "password": "wrong"
-     }, 400, {'detail': "LOGIN_BAD_CREDENTIALS"}),
-    ({
-         "username": "user1@example.com",
-         "password": "wrong"
-     }, 400, {'detail': "LOGIN_BAD_CREDENTIALS"}),
-])
-async def test_login_validation_error(ac: AsyncClient, user_data, expected_status_code, expected_detail):
-    response = await ac.post("/api/users/jwt/login", data=user_data)
-    assert response.status_code == expected_status_code
+    @pytest.mark.parametrize("user_data, expected_status_code, expected_detail", [
+        ({
+             "username": "wrong_email.com",
+             "password": "valid_password"
+         }, 400, {'detail': "LOGIN_BAD_CREDENTIALS"}),
+        ({
+             "username": "user1@example.com",
+             "password": "wrong"
+         }, 400, {'detail': "LOGIN_BAD_CREDENTIALS"}),
+    ])
+    async def test_login_validation_error(self, ac: AsyncClient, user_data, expected_status_code, expected_detail):
+        response = await ac.post("/api/users/jwt/login", data=user_data)
+        assert response.status_code == expected_status_code
+        assert response.json() == expected_detail
 
 
 async def test_get_user(ac: AsyncClient):
