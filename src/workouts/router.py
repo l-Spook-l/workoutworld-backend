@@ -68,20 +68,20 @@ async def add_video_exercise(
 
         stat = insert(Exercise).values(**exercise_data.model_dump(exclude_none=True)).returning(Exercise.id)
         result = await session.execute(stat)
-        id = result.scalar()
+        exercise_id = result.scalar()
 
         if photos:
             for photo in photos:
                 photo.filename = photo.filename.lower()
-                path_photos = f"src/media/Photos_exercise/{id}_{name}_{uuid4()}.png"
+                path_photos = f"src/media/Photos_exercise/{exercise_id}_{name}_{uuid4()}.png"
                 async with aiofiles.open(path_photos, '+wb') as buffer:
                     data = await photo.read()
                     await buffer.write(data)
-                add_photos = insert(Exercise_photo).values(photo=path_photos[4:], exercise_id=id)
+                add_photos = insert(Exercise_photo).values(photo=path_photos[4:], exercise_id=exercise_id)
                 await session.execute(add_photos)
 
         await session.commit()
-        return {"status": "success", 'exercise_ID': id}
+        return {"status": "success", 'exercise_ID': exercise_id}
     except ValidationError as e:
         error_messages = []
         for error in e.errors():
