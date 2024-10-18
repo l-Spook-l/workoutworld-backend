@@ -26,9 +26,9 @@ async def add_workout(new_workout: WorkoutCreate, user: User = Depends(current_u
     try:
         stat = insert(Workout).values(**new_workout.dict()).returning(Workout.id)
         result = await session.execute(stat)
-        id = result.scalar()
+        workout_id = result.scalar()
         await session.commit()
-        return {"status": "success", 'workout_ID': id}
+        return {"status": "success", 'workout_ID': workout_id}
     except Exception:
         raise HTTPException(status_code=500, detail={
             'status': 'error',
