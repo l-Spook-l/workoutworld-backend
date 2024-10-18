@@ -50,12 +50,25 @@ async def ac() -> AsyncGenerator[AsyncClient, None]:
         yield ac
 
 
-def generate_jwt_token(user_id: int):
-    payload = {
-        "sub": str(user_id),  # идентификатор пользователя
-        "aud": ["fastapi-users:auth"],
-        "exp": int(time.time()) + 2592000  # время жизни токена
+@pytest.fixture
+def test_data():
+    return {
+        "user_id": 1,
+        "workout_id": 0,
+        "exercise_id": 0
     }
 
-    token = jwt.encode(payload, SECRET_KEY, algorithm="HS256")
-    return token
+
+class BaseTest:
+    @staticmethod
+    def _generate_jwt_token(user_id: int):
+        payload = {
+            "sub": str(user_id),
+            "aud": ["fastapi-users:auth"],
+            "exp": int(time.time()) + 2592000  # 30 days
+        }
+        return jwt.encode(payload, SECRET_KEY, algorithm="HS256")
+
+    def get_headers(self, user_id):
+        token = self._generate_jwt_token(user_id=user_id)
+        return {"Authorization": f"Bearer {token}"}
