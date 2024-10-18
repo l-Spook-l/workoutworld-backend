@@ -124,8 +124,7 @@ class TestRegisterUser:
              "detail": "REGISTER_USER_ALREADY_EXISTS"
          })
     ])
-    async def test_register_user_validation_error(self, ac: AsyncClient, user_data, expected_status_code,
-                                                  expected_detail):
+    async def test_register_user_error(self, ac: AsyncClient, user_data, expected_status_code, expected_detail):
         response = await ac.post("/api/users/register", json=user_data)
         assert response.status_code == expected_status_code
         assert response.json() == expected_detail
@@ -151,7 +150,7 @@ class TestLoginUser:
              "password": "wrong"
          }, 400, {'detail': "LOGIN_BAD_CREDENTIALS"}),
     ])
-    async def test_login_validation_error(self, ac: AsyncClient, user_data, expected_status_code, expected_detail):
+    async def test_login_error(self, ac: AsyncClient, user_data, expected_status_code, expected_detail):
         response = await ac.post("/api/users/jwt/login", data=user_data)
         assert response.status_code == expected_status_code
         assert response.json() == expected_detail
@@ -173,7 +172,7 @@ class TestGetUser:
         (None, 401, {'detail': 'Unauthorized'}),
         ("invalid_token", 401, {'detail': 'Unauthorized'}),
     ])
-    async def test_get_user_errors(self, ac: AsyncClient, token, expected_status_code, expected_detail):
+    async def test_get_user_error(self, ac: AsyncClient, token, expected_status_code, expected_detail, test_data):
         headers = {}
         if token:
             headers = {"Authorization": f"Bearer {token}"}
