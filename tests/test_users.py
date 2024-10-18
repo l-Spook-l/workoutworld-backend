@@ -2,7 +2,7 @@ import pytest
 from sqlalchemy import insert, select
 from httpx import AsyncClient
 from src.users.models import Role, User
-from .conftest import async_session_maker, generate_jwt_token
+from .conftest import async_session_maker, BaseTest
 
 
 async def test_add_roles():
@@ -156,10 +156,9 @@ class TestLoginUser:
         assert response.json() == expected_detail
 
 
-class TestGetUser:
-    async def test_get_user(self, ac: AsyncClient):
-        token = generate_jwt_token(user_id=1)
-        headers = {"Authorization": f"Bearer {token}"}
+class TestGetUser(BaseTest):
+    async def test_get_user(self, ac: AsyncClient, test_data):
+        headers = self.get_headers(user_id=test_data["user_id"])
         response = await ac.get("/api/users/me", headers=headers)
 
         assert response.status_code == 200
