@@ -16,7 +16,7 @@ from .schemas import WorkoutCreate, ExerciseCreate, SetCreate, WorkoutUpdate, Ex
 
 router = APIRouter(
     prefix="/workouts",
-    tags=["Workout"]
+    tags=["workouts"]
 )
 
 
