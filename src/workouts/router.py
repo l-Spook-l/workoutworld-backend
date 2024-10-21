@@ -24,7 +24,7 @@ router = APIRouter(
 async def add_workout(new_workout: WorkoutCreate, user: User = Depends(current_user),
                       session: AsyncSession = Depends(get_async_session)):
     try:
-        stat = insert(Workout).values(**new_workout.dict()).returning(Workout.id)
+        stat = insert(Workout).values(**new_workout.model_dump()).returning(Workout.id)
         result = await session.execute(stat)
         workout_id = result.scalar()
         await session.commit()
@@ -96,7 +96,7 @@ async def add_set(number_sets: int, new_set: SetCreate, user: User = Depends(cur
                   session: AsyncSession = Depends(get_async_session)):
     try:
         for _ in range(number_sets):
-            stat = insert(Set).values(**new_set.dict())
+            stat = insert(Set).values(**new_set.model_dump())
             await session.execute(stat)
         await session.commit()
         return {"status": "success"}
