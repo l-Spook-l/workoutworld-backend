@@ -1,7 +1,7 @@
 import pytest
 from sqlalchemy import insert, select
 from httpx import AsyncClient
-from src.users.models import Role, User
+from src.users.models import Role
 from .conftest import async_session_maker, BaseTest
 
 
