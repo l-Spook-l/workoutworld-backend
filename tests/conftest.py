@@ -50,7 +50,7 @@ async def ac() -> AsyncGenerator[AsyncClient, None]:
         yield ac
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def test_data():
     return {
         "user_id": 1,
