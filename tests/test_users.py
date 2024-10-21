@@ -199,3 +199,44 @@ class TestGetUser(BaseTest):
         assert response.status_code == expected_status_code
         assert response.json() == expected_detail
 
+
+class TestUpdateUser(BaseTest):
+    @pytest.mark.parametrize("user_data, expected_status_code, expected_detail", [
+        ({
+             "email": "user1_update@example.com",
+         }, 200,
+         {'id': 1, 'email': 'user1_update@example.com', 'is_active': True, 'is_superuser': False, 'is_verified': False,
+          'first_name': 'User1_first name', 'last_name': 'User1_last name', 'phone': '0123456789', 'role_id': 2}),
+        ({
+             "first_name": "User_1_update_first_name",
+             "last_name": "User_1_last_name",
+         }, 200,
+         {'id': 1, 'email': 'user1_update@example.com', 'is_active': True, 'is_superuser': False, 'is_verified': False,
+          'first_name': 'User_1_update_first_name', 'last_name': 'User_1_last_name', 'phone': '0123456789',
+          'role_id': 2}),
+        ({
+             "phone": "3801234567",
+         }, 200,
+         {'id': 1, 'email': 'user1_update@example.com', 'is_active': True, 'is_superuser': False, 'is_verified': False,
+          'first_name': 'User_1_update_first_name', 'last_name': 'User_1_last_name', 'phone': '3801234567',
+          'role_id': 2}),
+    ])
+    async def test_update_user(self, ac: AsyncClient, test_data, user_data, expected_status_code, expected_detail):
+        headers = self.get_headers(user_id=test_data["first_user_id"])
+        response = await ac.patch("/api/users/me", json=user_data, headers=headers)
+
+        assert response.status_code == expected_status_code
+        assert response.json() == expected_detail
+
+    @pytest.mark.parametrize("user_data, expected_status_code, expected_detail", [
+        ({
+             "email": "user2@example.com",
+         }, 400, {"detail": "UPDATE_USER_EMAIL_ALREADY_EXISTS"}),
+    ])
+    async def test_update_user_error(self, ac: AsyncClient, test_data, user_data, expected_status_code,
+                                     expected_detail):
+        headers = self.get_headers(user_id=test_data["first_user_id"])
+        response = await ac.patch("/api/users/me", json=user_data, headers=headers)
+
+        assert response.status_code == expected_status_code
+        assert response.json() == expected_detail
