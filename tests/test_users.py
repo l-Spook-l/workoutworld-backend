@@ -145,12 +145,16 @@ class TestRegisterUser:
 
 
 class TestLoginUser:
-    async def test_login(self, ac: AsyncClient):
-        response = await ac.post("/api/users/jwt/login", data={
-            "username": "user1@example.com",
-            "password": "valid_password"
-        })
-        assert response.status_code == 200
+    @pytest.mark.parametrize("user_data, expected_status_code, expected_detail", [
+        ({
+             "username": "user1@example.com",
+             "password": "valid_password"
+         }, 200, {'detail': "LOGIN_BAD_CREDENTIALS"}),
+    ])
+    async def test_login(self, ac: AsyncClient, user_data, expected_status_code, expected_detail):
+        response = await ac.post("/api/users/jwt/login", data=user_data)
+
+        assert response.status_code == expected_status_code
         token = response.json().get("access_token")
         assert token is not None
 
