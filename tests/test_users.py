@@ -18,7 +18,7 @@ async def test_add_roles():
         query = select(Role.id, Role.name)
         result = await session.execute(query)
 
-        assert result.all() == [(1, 'admin'), (2, 'user')], "Роли не добавились"
+        assert result.all() == [(1, 'admin'), (2, 'user')], "Roles not added"
 
 
 class TestRegisterUser:
