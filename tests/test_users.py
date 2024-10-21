@@ -140,6 +140,7 @@ class TestRegisterUser:
     ])
     async def test_register_user_error(self, ac: AsyncClient, user_data, expected_status_code, expected_detail):
         response = await ac.post("/api/users/register", json=user_data)
+
         assert response.status_code == expected_status_code
         assert response.json() == expected_detail
 
@@ -170,13 +171,14 @@ class TestLoginUser:
     ])
     async def test_login_error(self, ac: AsyncClient, user_data, expected_status_code, expected_detail):
         response = await ac.post("/api/users/jwt/login", data=user_data)
+
         assert response.status_code == expected_status_code
         assert response.json() == expected_detail
 
 
 class TestGetUser(BaseTest):
     async def test_get_user(self, ac: AsyncClient, test_data):
-        headers = self.get_headers(user_id=test_data["user_id"])
+        headers = self.get_headers(user_id=test_data["first_user_id"])
         response = await ac.get("/api/users/me", headers=headers)
 
         assert response.status_code == 200
