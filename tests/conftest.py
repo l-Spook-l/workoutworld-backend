@@ -53,9 +53,11 @@ async def ac() -> AsyncGenerator[AsyncClient, None]:
 @pytest.fixture(scope="session")
 def test_data():
     return {
-        "user_id": 1,
+        "first_user_id": 0,
+        "second_user_id": 0,
         "workout_id": 0,
-        "exercise_id": 0
+        "first_exercise_id": 0,
+        "second_exercise_id": 0,
     }
 
 
