@@ -191,11 +191,10 @@ class TestGetUser(BaseTest):
         (None, 401, {'detail': 'Unauthorized'}),
         ("invalid_token", 401, {'detail': 'Unauthorized'}),
     ])
-    async def test_get_user_error(self, ac: AsyncClient, token, expected_status_code, expected_detail, test_data):
+    async def test_get_user_error(self, ac: AsyncClient, token, expected_status_code, expected_detail):
         headers = {}
         if token:
             headers = {"Authorization": f"Bearer {token}"}
-
         response = await ac.get("/api/users/me", headers=headers)
 
         assert response.status_code == expected_status_code
