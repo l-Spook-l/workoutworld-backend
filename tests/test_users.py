@@ -22,40 +22,54 @@ async def test_add_roles():
 
 
 class TestRegisterUser:
-    @pytest.mark.parametrize("user_data", [
-        {
-            "email": "user1@example.com",
-            "first_name": "User1_first name",
-            "password": "valid_password",
-            "last_name": "User1_last name",
-            "phone": "0123456789"
-        },
-        {
-            "email": "user2@example.com",
-            "first_name": "User2_first name",
-            "password": "valid_password",
-            "last_name": "User2_last name",
-            "phone": "9876543210"
-        }
+    @pytest.mark.parametrize("user_data, expected_status_code, expected_detail", [
+        ({
+             "email": "user1@example.com",
+             "first_name": "User1_first name",
+             "password": "valid_password",
+             "last_name": "User1_last name",
+             "phone": "0123456789"
+         }, 201, {
+             "id": 1,
+             "email": "user1@example.com",
+             "is_active": True,
+             "is_superuser": False,
+             "is_verified": False,
+             "first_name": "User1_first name",
+             "last_name": "User1_last name",
+             "phone": "0123456789",
+             "role_id": 2
+         }),
+        ({
+             "email": "user2@example.com",
+             "first_name": "User2_first name",
+             "password": "valid_password",
+             "last_name": "User2_last name",
+             "phone": "9876543210"
+         }, 201, {
+             "id": 2,
+             "email": "user2@example.com",
+             "is_active": True,
+             "is_superuser": False,
+             "is_verified": False,
+             "first_name": "User2_first name",
+             "last_name": "User2_last name",
+             "phone": "9876543210",
+             "role_id": 2
+         })
     ])
-    async def test_register_user(self, ac: AsyncClient, user_data):
+    async def test_register_user(self, ac: AsyncClient, test_data, user_data, expected_status_code, expected_detail):
         response = await ac.post("/api/users/register", json=user_data)
 
-        assert response.status_code == 201
+        assert response.status_code == expected_status_code
+        assert response.json() == expected_detail
+        user_id = response.json().get("id")
+        assert user_id in [1, 2]
 
-        async with async_session_maker() as session:
-            query = select(User).where(User.email == user_data["email"])
-            result = await session.execute(query)
-            registered_user = result.scalar()
-            assert registered_user is not None, "Пользователь не найден в базе данных."
-
-            assert registered_user.email == user_data["email"], "Email не совпадает."
-            assert registered_user.first_name == user_data["first_name"], "Имя не совпадает."
-            assert registered_user.last_name == user_data["last_name"], "Фамилия не совпадает."
-            assert registered_user.phone == user_data["phone"], "Телефон не совпадает."
-            assert registered_user.is_active is True, "Статус активности не совпадает."
-            assert registered_user.is_superuser is False, "Статус суперпользователя не совпадает."
-            assert registered_user.is_verified is False, "Статус верификации не совпадает."
+        if user_id == 1:
+            test_data["first_user_id"] = user_id
+        elif user_id == 2:
+            test_data["second_user_id"] = user_id
 
     @pytest.mark.parametrize("user_data, expected_status_code, expected_detail", [
         ({
