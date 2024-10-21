@@ -6,14 +6,11 @@ from typing import AsyncGenerator
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
-from sqlalchemy import insert
 from src.main import app
-from src.users.models import Role
 from src.core.database import get_async_session
 from src.core.config import DATABASE_URL_TEST
 from src.core.config import SECRET_KEY
 from src.core.database import Base
-
 
 engine_test = create_async_engine(DATABASE_URL_TEST, poolclass=NullPool)
 async_session_maker = async_sessionmaker(bind=engine_test, expire_on_commit=False)
