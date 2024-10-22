@@ -48,10 +48,10 @@ async def request_password_reset(request: PasswordResetRequest, session: AsyncSe
     reset_token = await user_manager.forgot_password(user)
     await send_token_by_email(user.email, reset_token)
 
-    return {"message": "If the email exists, a password reset link has been sent.", 'token': reset_token}
+    return {"message": "If the email exists, a password reset link has been sent.", "token": reset_token}
 
 
-@router.post('/send-message-admin')
+@router.post("/send-message-admin")
 async def send_message_admin(
         message: SendMessageAdmin,
         request: Request,
@@ -68,8 +68,8 @@ async def send_message_admin(
     if last_sent_time is not None:
         time_difference = current_time - float(last_sent_time)
         if time_difference < 180:
-            raise HTTPException(status_code=429, detail='You have already sent a message. '
-                                                        'Please wait for 3 minutes before sending another message.')
+            raise HTTPException(status_code=429, detail="You have already sent a message. "
+                                                        "Please wait for 3 minutes before sending another message.")
 
     try:
         # Сохранение текущего времени отправки
@@ -83,4 +83,4 @@ async def send_message_admin(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Celery error: {str(e)}")
 
-    return {'status': 'success'}
+    return {"status": "success"}

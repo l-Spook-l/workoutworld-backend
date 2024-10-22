@@ -18,7 +18,7 @@ async def test_add_roles():
         query = select(Role.id, Role.name)
         result = await session.execute(query)
 
-        assert result.all() == [(1, 'admin'), (2, 'user')], "Roles not added"
+        assert result.all() == [(1, "admin"), (2, "user")], "Roles not added"
 
 
 class TestRegisterUser:
@@ -78,56 +78,57 @@ class TestRegisterUser:
              "first_name": "",
              "last_name": "",
              "phone": ""
-         }, 422, {'detail': [{'type': 'value_error', 'loc': ['body', 'email'],
-                              'msg': 'value is not a valid email address: The email '
-                                     'address is not valid. It must have exactly one @-sign.',
-                              'input': '',
-                              'ctx': {'reason': 'The email address is not valid. It must have exactly one @-sign.'}},
-                             {'type': 'string_too_short', 'loc': ['body', 'password'],
-                              'msg': 'String should have at least 8 characters', 'input': '', 'ctx': {'min_length': 8}},
-                             {'type': 'string_too_short', 'loc': ['body', 'first_name'],
-                              'msg': 'String should have at least 5 characters', 'input': '', 'ctx': {'min_length': 5}},
-                             {'type': 'string_too_short', 'loc': ['body', 'last_name'],
-                              'msg': 'String should have at least 5 characters', 'input': '',
-                              'ctx': {'min_length': 5}}]}),
+         }, 422, {"detail": [
+            {"type": "value_error", "loc": ["body", "email"],
+             "msg": "value is not a valid email address: The email "
+                    "address is not valid. It must have exactly one @-sign.",
+             "input": "",
+             "ctx": {"reason": "The email address is not valid. It must have exactly one @-sign."}},
+            {"type": "string_too_short", "loc": ["body", "password"],
+             "msg": "String should have at least 8 characters", "input": "", "ctx": {"min_length": 8}},
+            {"type": "string_too_short", "loc": ["body", "first_name"],
+             "msg": "String should have at least 5 characters", "input": "", "ctx": {"min_length": 5}},
+            {"type": "string_too_short", "loc": ["body", "last_name"],
+             "msg": "String should have at least 5 characters", "input": "",
+             "ctx": {"min_length": 5}}]}),
         ({
              "email": "test@example.com",
              "password": "short",
              "first_name": "",
              "last_name": "",
              "phone": ""
-         }, 422, {'detail': [
-            {'type': 'string_too_short', 'loc': ['body', 'password'], 'msg': 'String should have at least 8 characters',
-             'input': 'short', 'ctx': {'min_length': 8}},
-            {'type': 'string_too_short', 'loc': ['body', 'first_name'],
-             'msg': 'String should have at least 5 characters',
-             'input': '', 'ctx': {'min_length': 5}},
-            {'type': 'string_too_short', 'loc': ['body', 'last_name'],
-             'msg': 'String should have at least 5 characters',
-             'input': '', 'ctx': {'min_length': 5}}]}),
+         }, 422, {"detail": [
+            {"type": "string_too_short", "loc": ["body", "password"], "msg": "String should have at least 8 characters",
+             "input": "short", "ctx": {"min_length": 8}},
+            {"type": "string_too_short", "loc": ["body", "first_name"],
+             "msg": "String should have at least 5 characters",
+             "input": "", "ctx": {"min_length": 5}},
+            {"type": "string_too_short", "loc": ["body", "last_name"],
+             "msg": "String should have at least 5 characters",
+             "input": "", "ctx": {"min_length": 5}}]}),
         ({
              "email": "test@example.com",
              "password": "valid_password",
              "first_name": "J",
              "last_name": "",
              "phone": ""
-         }, 422, {'detail': [
-            {'type': 'string_too_short', 'loc': ['body', 'first_name'],
-             'msg': 'String should have at least 5 characters',
-             'input': 'J', 'ctx': {'min_length': 5}},
-            {'type': 'string_too_short', 'loc': ['body', 'last_name'],
-             'msg': 'String should have at least 5 characters',
-             'input': '', 'ctx': {'min_length': 5}}]}),
+         }, 422, {"detail": [
+            {"type": "string_too_short", "loc": ["body", "first_name"],
+             "msg": "String should have at least 5 characters",
+             "input": "J", "ctx": {"min_length": 5}},
+            {"type": "string_too_short", "loc": ["body", "last_name"],
+             "msg": "String should have at least 5 characters",
+             "input": "", "ctx": {"min_length": 5}}]}),
         ({
              "email": "test@example.com",
              "password": "valid_password",
              "first_name": "Oliver",
              "last_name": "",
              "phone": ""
-         }, 422, {'detail': [
-            {'type': 'string_too_short', 'loc': ['body', 'last_name'],
-             'msg': 'String should have at least 5 characters',
-             'input': '', 'ctx': {'min_length': 5}}]}),
+         }, 422, {"detail": [
+            {"type": "string_too_short", "loc": ["body", "last_name"],
+             "msg": "String should have at least 5 characters",
+             "input": "", "ctx": {"min_length": 5}}]}),
         ({
              "email": "user1@example.com",
              "password": "valid_password",
@@ -150,7 +151,7 @@ class TestLoginUser:
         ({
              "username": "user1@example.com",
              "password": "valid_password"
-         }, 200, {'detail': "LOGIN_BAD_CREDENTIALS"}),
+         }, 200, {"detail": "LOGIN_BAD_CREDENTIALS"}),
     ])
     async def test_login(self, ac: AsyncClient, user_data, expected_status_code, expected_detail):
         response = await ac.post("/api/users/jwt/login", data=user_data)
@@ -163,11 +164,11 @@ class TestLoginUser:
         ({
              "username": "wrong_email.com",
              "password": "valid_password"
-         }, 400, {'detail': "LOGIN_BAD_CREDENTIALS"}),
+         }, 400, {"detail": "LOGIN_BAD_CREDENTIALS"}),
         ({
              "username": "user1@example.com",
              "password": "wrong"
-         }, 400, {'detail': "LOGIN_BAD_CREDENTIALS"}),
+         }, 400, {"detail": "LOGIN_BAD_CREDENTIALS"}),
     ])
     async def test_login_error(self, ac: AsyncClient, user_data, expected_status_code, expected_detail):
         response = await ac.post("/api/users/jwt/login", data=user_data)
@@ -188,8 +189,8 @@ class TestGetUser(BaseTest):
                                    'phone': '0123456789', 'role_id': 2}
 
     @pytest.mark.parametrize("token, expected_status_code, expected_detail", [
-        (None, 401, {'detail': 'Unauthorized'}),
-        ("invalid_token", 401, {'detail': 'Unauthorized'}),
+        (None, 401, {"detail": "Unauthorized"}),
+        ("invalid_token", 401, {"detail": "Unauthorized"}),
     ])
     async def test_get_user_error(self, ac: AsyncClient, token, expected_status_code, expected_detail):
         headers = {}
@@ -206,21 +207,46 @@ class TestUpdateUser(BaseTest):
         ({
              "email": "user1_update@example.com",
          }, 200,
-         {'id': 1, 'email': 'user1_update@example.com', 'is_active': True, 'is_superuser': False, 'is_verified': False,
-          'first_name': 'User1_first name', 'last_name': 'User1_last name', 'phone': '0123456789', 'role_id': 2}),
+         {
+             "id": 1,
+             "email": "user1_update@example.com",
+             "is_active": True,
+             "is_superuser": False,
+             "is_verified": False,
+             "first_name": "User1_first name",
+             "last_name": "User1_last name",
+             "phone": "0123456789",
+             "role_id": 2
+         }),
         ({
              "first_name": "User_1_update_first_name",
              "last_name": "User_1_last_name",
          }, 200,
-         {'id': 1, 'email': 'user1_update@example.com', 'is_active': True, 'is_superuser': False, 'is_verified': False,
-          'first_name': 'User_1_update_first_name', 'last_name': 'User_1_last_name', 'phone': '0123456789',
-          'role_id': 2}),
+         {
+             "id": 1,
+             "email": "user1_update@example.com",
+             "is_active": True,
+             "is_superuser": False,
+             "is_verified": False,
+             "first_name": "User_1_update_first_name",
+             "last_name": "User_1_last_name",
+             "phone": "0123456789",
+             "role_id": 2
+         }),
         ({
              "phone": "3801234567",
          }, 200,
-         {'id': 1, 'email': 'user1_update@example.com', 'is_active': True, 'is_superuser': False, 'is_verified': False,
-          'first_name': 'User_1_update_first_name', 'last_name': 'User_1_last_name', 'phone': '3801234567',
-          'role_id': 2}),
+         {
+             "id": 1,
+             "email": "user1_update@example.com",
+             "is_active": True,
+             "is_superuser": False,
+             "is_verified": False,
+             "first_name": "User_1_update_first_name",
+             "last_name": "User_1_last_name",
+             "phone": "3801234567",
+             "role_id": 2
+         }),
     ])
     async def test_update_user(self, ac: AsyncClient, test_data, user_data, expected_status_code, expected_detail):
         headers = self.get_headers(user_id=test_data["first_user_id"])

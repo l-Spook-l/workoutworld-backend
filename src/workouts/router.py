@@ -28,12 +28,12 @@ async def add_workout(new_workout: WorkoutCreate, user: User = Depends(current_u
         result = await session.execute(stat)
         workout_id = result.scalar()
         await session.commit()
-        return {"status": "success", 'workout_ID': workout_id}
+        return {"status": "success", "workout_ID": workout_id}
     except Exception:
         raise HTTPException(status_code=500, detail={
-            'status': 'error',
-            'data': None,
-            'details': None,
+            "status": "error",
+            "data": None,
+            "details": None,
         })
 
 
@@ -51,8 +51,8 @@ async def add_video_exercise(
         user: User = Depends(current_user),
         session: AsyncSession = Depends(get_async_session)):
     if video:
-        if video[:7] != '<iframe' or video[-7:] != 'iframe>':
-            video = ''
+        if video[:7] != "<iframe" or video[-7:] != "iframe>":
+            video = ""
 
     try:
         exercise_data = ExerciseCreate(
@@ -74,14 +74,14 @@ async def add_video_exercise(
             for photo in photos:
                 photo.filename = photo.filename.lower()
                 path_photos = f"src/media/Photos_exercise/{exercise_id}_{name}_{uuid4()}.png"
-                async with aiofiles.open(path_photos, '+wb') as buffer:
+                async with aiofiles.open(path_photos, "+wb") as buffer:
                     data = await photo.read()
                     await buffer.write(data)
                 add_photos = insert(Exercise_photo).values(photo=path_photos[4:], exercise_id=exercise_id)
                 await session.execute(add_photos)
 
         await session.commit()
-        return {"status": "success", 'exercise_ID': exercise_id}
+        return {"status": "success", "exercise_ID": exercise_id}
     except ValidationError as e:
         error_messages = []
         for error in e.errors():
@@ -102,9 +102,9 @@ async def add_set(number_sets: int, new_set: SetCreate, user: User = Depends(cur
         return {"status": "success"}
     except Exception:
         raise HTTPException(status_code=500, detail={
-            'status': 'error',
-            'data': None,
-            'details': None,
+            "status": "error",
+            "data": None,
+            "details": None,
         })
 
 
@@ -142,9 +142,9 @@ async def add_workout_to_user(user_id: int, workout_id: int, user: User = Depend
         return {"status": "success", "message": "Workout added to user"}
     except Exception:
         raise HTTPException(status_code=500, detail={
-            'status': 'error',
-            'data': None,
-            'details': None,
+            "status": "error",
+            "data": None,
+            "details": None,
         })
 
 
@@ -164,14 +164,14 @@ async def add_video_exercise(
             for photo in photos:
                 photo.filename = photo.filename.lower()
                 path_photos = f"src/media/Photos_exercise/{exercise_id}_{exercise_name}_{uuid4()}.png"
-                async with aiofiles.open(path_photos, '+wb') as buffer:
+                async with aiofiles.open(path_photos, "+wb") as buffer:
                     data = await photo.read()
                     await buffer.write(data)
                 add_photos = insert(Exercise_photo).values(photo=path_photos[4:], exercise_id=exercise_id)
                 await session.execute(add_photos)
 
         await session.commit()
-        return {"status": "success", 'exercise_ID': exercise_id}
+        return {"status": "success", "exercise_ID": exercise_id}
     except ValidationError as e:
 
         raise HTTPException(status_code=422, detail=e)
@@ -207,18 +207,18 @@ async def get_workouts(
         workouts = result.mappings().all()
 
         return {
-            'status': 'success',
-            'data': workouts,
-            'skip': skip,
-            'limit': limit,
-            'total_count': total_count,
-            'details': None,
+            "status": "success",
+            "data": workouts,
+            "skip": skip,
+            "limit": limit,
+            "total_count": total_count,
+            "details": None,
         }
     except Exception:
         raise HTTPException(status_code=500, detail={
-            'status': 'error',
-            'data': None,
-            'details': None,
+            "status": "error",
+            "data": None,
+            "details": None,
         })
 
 
@@ -233,9 +233,9 @@ async def get_one_workout(workout_id: int, user_id: int = None, session: AsyncSe
             raise HTTPException(status_code=403)
 
         return {
-            'status': 'success',
-            'data': workout,
-            'details': None,
+            "status": "success",
+            "data": workout,
+            "details": None,
         }
 
     except NoResultFound:
@@ -269,9 +269,9 @@ async def get_one_workout(workout_id: int, user_id: int,
             raise HTTPException(status_code=403)
 
         return {
-            'status': 'success',
-            'data': workout,
-            'details': None,
+            "status": "success",
+            "data": workout,
+            "details": None,
         }
 
     except NoResultFound:
@@ -318,18 +318,18 @@ async def get_my_workouts(user_id: int,
         )
 
         return {
-            'status': 'success',
-            'data': my_workouts,
-            'skip': skip,
-            'limit': limit,
-            'total_count': total_count,
-            'details': None,
+            "status": "success",
+            "data": my_workouts,
+            "skip": skip,
+            "limit": limit,
+            "total_count": total_count,
+            "details": None,
         }
     except Exception:
         raise HTTPException(status_code=500, detail={
-            'status': 'error',
-            'data': None,
-            'details': None,
+            "status": "error",
+            "data": None,
+            "details": None,
         })
 
 
@@ -373,19 +373,19 @@ async def get_user_workouts(user_id: int,
         )
 
         return {
-            'status': 'success',
+            "status": "success",
             "user_id": user_id,
-            'data': user_workouts,
-            'skip': skip,
-            'limit': limit,
-            'total_count': total_count,
-            'details': None,
+            "data": user_workouts,
+            "skip": skip,
+            "limit": limit,
+            "total_count": total_count,
+            "details": None,
         }
     except Exception:
         raise HTTPException(status_code=500, detail={
-            'status': 'error',
-            'data': None,
-            'details': None,
+            "status": "error",
+            "data": None,
+            "details": None,
         })
 
 
@@ -396,15 +396,15 @@ async def get_difficulty(session: AsyncSession = Depends(get_async_session)):
         result = await session.execute(query)
         difficulty = result.mappings().all()
         return {
-            'status': 'success',
-            'data': difficulty,
-            'details': None,
+            "status": "success",
+            "data": difficulty,
+            "details": None,
         }
     except Exception:
         raise HTTPException(status_code=500, detail={
-            'status': 'error',
-            'data': None,
-            'details': None,
+            "status": "error",
+            "data": None,
+            "details": None,
         })
 
 
@@ -417,15 +417,15 @@ async def get_sets(user_id: int, exercise_ids: list[int] = Query(None),
         result = await session.execute(query)
         sets = result.mappings().all()
         return {
-            'status': 'success',
-            'data': sets,
-            'details': None,
+            "status": "success",
+            "data": sets,
+            "details": None,
         }
     except Exception:
         raise HTTPException(status_code=500, detail={
-            'status': 'error',
-            'data': None,
-            'details': None,
+            "status": "error",
+            "data": None,
+            "details": None,
         })
 
 
@@ -439,14 +439,14 @@ async def update_workout(workout_id: int, update_data: WorkoutUpdate, user: User
         await session.commit()
 
         return {
-            'status': 'success',
-            'details': None,
+            "status": "success",
+            "details": None,
         }
     except Exception:
         raise HTTPException(status_code=500, detail={
-            'status': 'error',
-            'data': None,
-            'details': None,
+            "status": "error",
+            "data": None,
+            "details": None,
         })
 
 
@@ -454,8 +454,8 @@ async def update_workout(workout_id: int, update_data: WorkoutUpdate, user: User
 async def update_exercise(exercise_id: int, update_data: ExerciseUpdate, user: User = Depends(current_user),
                           session: AsyncSession = Depends(get_async_session)):
     if update_data.video:
-        if update_data.video[:7] != '<iframe' or update_data.video[-7:] != 'iframe>':
-            update_data.video = ''
+        if update_data.video[:7] != "<iframe" or update_data.video[-7:] != "iframe>":
+            update_data.video = ""
 
     try:
         query = update(Exercise).filter(Exercise.id == exercise_id).values(**update_data.model_dump(exclude_none=True))
@@ -464,14 +464,14 @@ async def update_exercise(exercise_id: int, update_data: ExerciseUpdate, user: U
         await session.commit()
 
         return {
-            'status': 'success',
-            'details': None,
+            "status": "success",
+            "details": None,
         }
     except Exception:
         raise HTTPException(status_code=500, detail={
-            'status': 'error',
-            'data': None,
-            'details': None,
+            "status": "error",
+            "data": None,
+            "details": None,
         })
 
 
@@ -485,14 +485,14 @@ async def update_set(set_id: int, update_data: SetUpdate, user: User = Depends(c
         await session.commit()
 
         return {
-            'status': 'success',
-            'details': None,
+            "status": "success",
+            "details": None,
         }
     except Exception:
         raise HTTPException(status_code=500, detail={
-            'status': 'error',
-            'data': None,
-            'details': None,
+            "status": "error",
+            "data": None,
+            "details": None,
         })
 
 
@@ -522,14 +522,14 @@ async def delete_created_workout(workout_id: int, user: User = Depends(current_u
         await session.commit()
 
         return {
-            'status': 'success',
-            'details': None,
+            "status": "success",
+            "details": None,
         }
     except Exception:
         raise HTTPException(status_code=500, detail={
-            'status': 'error',
-            'data': None,
-            'details': None,
+            "status": "error",
+            "data": None,
+            "details": None,
         })
 
 
@@ -561,14 +561,14 @@ async def delete_created_workout(exercise_id: int,
         await session.commit()
 
         return {
-            'status': 'success',
-            'details': None,
+            "status": "success",
+            "details": None,
         }
     except Exception:
         raise HTTPException(status_code=500, detail={
-            'status': 'error',
-            'data': None,
-            'details': None,
+            "status": "error",
+            "data": None,
+            "details": None,
         })
 
 
@@ -589,14 +589,14 @@ async def delete_added_workout(workout_id: int, user_id: int, user: User = Depen
         await session.commit()
 
         return {
-            'status': 'success',
-            'details': None,
+            "status": "success",
+            "details": None,
         }
     except Exception:
         raise HTTPException(status_code=500, detail={
-            'status': 'error',
-            'data': None,
-            'details': None,
+            "status": "error",
+            "data": None,
+            "details": None,
         })
 
 
@@ -609,14 +609,14 @@ async def delete_added_sets(exercise_id: int, user_id: int, user: User = Depends
         await session.commit()
 
         return {
-            'status': 'success',
-            'details': None,
+            "status": "success",
+            "details": None,
         }
     except Exception:
         raise HTTPException(status_code=500, detail={
-            'status': 'error',
-            'data': None,
-            'details': None,
+            "status": "error",
+            "data": None,
+            "details": None,
         })
 
 
@@ -642,14 +642,14 @@ async def delete_added_sets(exercise_id: int, photo_ids: list[int] = Query(),
         await session.execute(del_photos)
         await session.commit()
         return {
-            'status': 'success',
-            'details': None,
+            "status": "success",
+            "details": None,
         }
     except FileNotFoundError:
         print("Файл не найден")
     except Exception:
         raise HTTPException(status_code=500, detail={
-            'status': 'error',
-            'data': None,
-            'details': None,
+            "status": "error",
+            "data": str(e),
+            "details": None,
         })
