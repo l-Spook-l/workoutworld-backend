@@ -27,6 +27,8 @@ REDIS_PORT = os.environ.get("REDIS_PORT")
 
 SECRET_KEY = os.environ.get("SECRET_KEY")
 
+ADMIN_SECRET_KEY = os.environ.get("ADMIN_SECRET_KEY")
+
 SENTRY_DNS = os.environ.get("SENTRY_DNS")
 
 SMTP_USER_EMAIL = os.environ.get("SMTP_USER_EMAIL")
