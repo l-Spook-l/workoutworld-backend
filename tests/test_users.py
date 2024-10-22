@@ -178,15 +178,25 @@ class TestLoginUser:
 
 
 class TestGetUser(BaseTest):
-    async def test_get_user(self, ac: AsyncClient, test_data):
+    @pytest.mark.parametrize("expected_status_code, expected_detail", [
+        (200, {
+            "id": 1,
+            "email": "user1@example.com",
+            "is_active": True,
+            "is_superuser": False,
+            "is_verified": False,
+            "first_name": "User1_first name",
+            "last_name": "User1_last name",
+            "phone": "0123456789",
+            "role_id": 2
+        }),
+    ])
+    async def test_get_user(self, ac: AsyncClient, test_data, expected_status_code, expected_detail):
         headers = self.get_headers(user_id=test_data["first_user_id"])
         response = await ac.get("/api/users/me", headers=headers)
 
-        assert response.status_code == 200
-        assert response.json() == {'id': 1, 'email': 'user1@example.com', 'is_active': True, 'is_superuser': False,
-                                   'is_verified': False, 'first_name': 'User1_first name',
-                                   'last_name': 'User1_last name',
-                                   'phone': '0123456789', 'role_id': 2}
+        assert response.status_code == expected_status_code
+        assert response.json() == expected_detail
 
     @pytest.mark.parametrize("token, expected_status_code, expected_detail", [
         (None, 401, {"detail": "Unauthorized"}),
