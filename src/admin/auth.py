@@ -2,9 +2,7 @@ import jwt
 from datetime import datetime, timedelta, timezone
 from sqladmin.authentication import AuthenticationBackend
 from starlette.requests import Request
-
-
-ADMIN_secret_key = "Hewq@kw4lfmS34L"
+from src.core.config import ADMIN_SECRET_KEY
 
 
 class AdminAuth(AuthenticationBackend):
@@ -19,7 +17,7 @@ class AdminAuth(AuthenticationBackend):
         }
 
         # Создание токена
-        token = jwt.encode(payload, ADMIN_secret_key, algorithm="HS256")
+        token = jwt.encode(payload, ADMIN_SECRET_KEY, algorithm="HS256")
         # Validate username/password credentials
         # And update session
         request.session.update({"token": token})
@@ -41,4 +39,4 @@ class AdminAuth(AuthenticationBackend):
         return True
 
 
-authentication_backend = AdminAuth(secret_key=ADMIN_secret_key)
+authentication_backend = AdminAuth(secret_key=ADMIN_SECRET_KEY)
