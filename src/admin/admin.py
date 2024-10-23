@@ -45,7 +45,9 @@ class DifficultyWorkoutAdmin(ModelView, model=DifficultyWorkout):
 
 
 def init_admin(app):
-    admin = Admin(app, engine, authentication_backend=authentication_backend)
+    admin = Admin(app, engine, authentication_backend=authentication_backend,
+                  title="Admin panel",
+                  base_url="/admin-panel")
     admin.add_view(UserAdmin)
     admin.add_view(WorkoutAdmin)
     admin.add_view(ExerciseAdmin)
