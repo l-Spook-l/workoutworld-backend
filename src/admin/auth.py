@@ -1,5 +1,6 @@
 import jwt
 from datetime import datetime, timedelta, timezone
+from jwt.exceptions import ExpiredSignatureError, InvalidTokenError
 from sqladmin.authentication import AuthenticationBackend
 from starlette.requests import Request
 from src.core.config import ADMIN_SECRET_KEY, ADMIN_USERNAME, ADMIN_PASSWORD
@@ -33,8 +34,14 @@ class AdminAuth(AuthenticationBackend):
         if not token:
             return False
 
-        # Check the token in depth
-        return True
+        try:
+            payload = jwt.decode(token, ADMIN_SECRET_KEY, algorithms=["HS256"])
+            return True
+
+        except ExpiredSignatureError:
+            return False
+        except InvalidTokenError:
+            return False
 
 
 authentication_backend = AdminAuth(secret_key=ADMIN_SECRET_KEY)
