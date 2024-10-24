@@ -13,8 +13,9 @@ from .manager import UserManager
 from .utils import get_user_db, send_token_by_email
 from .tasks import send_message_to_admin
 
-
-router = APIRouter()
+router = APIRouter(
+    tags=["users"]
+)
 
 # Authorization
 router.include_router(
