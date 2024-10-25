@@ -183,3 +183,33 @@ class TestAddWorkout(BaseTest):
 
         assert response.status_code == expected_status_code
         assert response.json().get("status") == "success"
+
+
+class TestDeleteWorkout(BaseTest):
+    async def test_delete_added_workout(self, ac: AsyncClient, test_data):
+        headers = self.get_headers(user_id=test_data["first_user_id"])
+        response = await ac.delete("/api/workouts/delete/added-workout", params={
+            "workout_id": 1,
+            "user_id": 1
+        }, headers=headers)
+
+        assert response.status_code == 200
+        assert response.json() == {"status": "success", "details": None}
+
+    async def test_delete_exercise(self, ac: AsyncClient, test_data):
+        headers = self.get_headers(user_id=test_data["first_user_id"])
+        response = await ac.delete("/api/workouts/delete/exercise", params={
+            "exercise_id": 2
+        }, headers=headers)
+
+        assert response.status_code == 200
+        assert response.json() == {"status": "success", "details": None}
+
+    async def test_delete_workout(self, ac: AsyncClient, test_data):
+        headers = self.get_headers(user_id=test_data["first_user_id"])
+        response = await ac.delete("/api/workouts/delete/created-workout", params={
+            "workout_id": 1
+        }, headers=headers)
+
+        assert response.status_code == 200
+        assert response.json() == {"status": "success", "details": None}
