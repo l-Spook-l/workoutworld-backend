@@ -159,3 +159,27 @@ class TestGetWorkout(BaseTest):
 
         assert response.status_code == 401
         assert response.json() == {"detail": "Unauthorized"}
+
+
+class TestAddWorkout(BaseTest):
+    @pytest.mark.parametrize("user_id, expected_status_code, expected_detail", [
+        (1, 400, {"detail": "This workout cannot be added to the workout creator"}),
+        (2, 200, {"status": "success", "message": "Workout added to user"}),
+    ])
+    async def test_add_workout_to_user(self, ac: AsyncClient, user_id, expected_status_code, expected_detail):
+        headers = self.get_headers(user_id=user_id)
+        response = await ac.post("/api/workouts/add-workout-to-user/1/1", headers=headers)
+
+        assert response.status_code == expected_status_code
+        assert response.json() == expected_detail
+
+    @pytest.mark.parametrize("user_id, expected_status_code, expected_detail", [
+        (1, 200, {"status": "success", "message": "Workout added to user"}),
+        (2, 200, {"status": "success", "message": "Workout added to user"}),
+    ])
+    async def test_get_user_added_workouts(self, ac: AsyncClient, user_id, expected_status_code, expected_detail):
+        headers = self.get_headers(user_id=user_id)
+        response = await ac.get("/api/workouts/get-user-added-workouts/2", headers=headers)
+
+        assert response.status_code == expected_status_code
+        assert response.json().get("status") == "success"
