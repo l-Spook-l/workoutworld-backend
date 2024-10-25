@@ -118,3 +118,44 @@ class TestCreateWorkout(BaseTest):
 
         assert response.status_code == 200
         assert response.json() == {"status": "success"}
+
+
+class TestGetWorkout(BaseTest):
+    async def test_get_workouts(self, ac: AsyncClient):
+        response = await ac.get("/api/workouts/")
+
+        assert response.status_code == 200
+        assert response.json().get("status") == "success"
+
+    async def test_get_selected_workout(self, ac: AsyncClient, test_data):
+        response = await ac.get("/api/workouts/workout/1", params={
+            "user_id": test_data["first_user_id"],
+        })
+
+        assert response.status_code == 200
+        assert response.json().get("status") == "success"
+
+    async def test_get_user_workouts(self, ac: AsyncClient, test_data):
+        headers = self.get_headers(user_id=test_data["first_user_id"])
+        response = await ac.get("/api/workouts/workout/1", params={
+            "user_id": test_data["first_user_id"],
+        }, headers=headers)
+
+        assert response.status_code == 200
+        assert response.json().get("status") == "success"
+
+    async def test_get_user_workouts_error(self, ac: AsyncClient, test_data):
+        response = await ac.get("/api/workouts/user-workouts", params={
+            "user_id": test_data["first_user_id"],
+        })
+
+        assert response.status_code == 401
+        assert response.json() == {"detail": "Unauthorized"}
+
+    async def test_get_active_workouts(self, ac: AsyncClient, test_data):
+        response = await ac.get("/api/workouts/user-workouts", params={
+            "user_id": test_data["first_user_id"],
+        })
+
+        assert response.status_code == 401
+        assert response.json() == {"detail": "Unauthorized"}
