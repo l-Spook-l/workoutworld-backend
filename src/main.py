@@ -1,21 +1,19 @@
 import uvicorn
 from fastapi.staticfiles import StaticFiles
-from fastapi import FastAPI, Depends
-from src.users.models import User
-from src.users.base_config import current_user
+from fastapi import FastAPI
 from src.users.router import router as router_user
 from src.workouts.router import router as router_workout
-
 from src.admin.admin import init_admin
-
 from src.core.redis import lifespan
 from src.core.cors import setup_cors
 from src.core.metrics import setup_metrics
 from src.core.sentry import sentry_sdk
 
+
 app = FastAPI(
     title="Workout App",
-    lifespan=lifespan
+    lifespan=lifespan,
+    # docs_url=None,  # Close the documentation
 )
 
 app.mount("/api/media", StaticFiles(directory="src/media"), name="media")
@@ -31,11 +29,6 @@ init_admin(app)
 
 app.include_router(router_user, prefix="/api")
 app.include_router(router_workout, prefix="/api")
-
-
-@app.get("/api/protected-route")
-def protected_route(user: User = Depends(current_user)):
-    return user
 
 
 if __name__ == "__main__":
