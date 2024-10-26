@@ -1,17 +1,17 @@
+import os
+import aiofiles
+from uuid import uuid4
+from pydantic import ValidationError
 from fastapi import APIRouter, Depends, Query, UploadFile, Form
+from fastapi.exceptions import HTTPException
 from sqlalchemy import select, insert, update, func, delete
 from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm.exc import NoResultFound
-from src.core.database import get_async_session
-from fastapi.exceptions import HTTPException
 from src.users.base_config import current_user
-from pydantic import ValidationError
-import aiofiles
-from uuid import uuid4
-import os
-from .models import Workout, Exercise, Set, added_workouts_association, Exercise_photo, DifficultyWorkout
+from src.core.database import get_async_session
 from src.users.models import User
+from .models import Workout, Exercise, Set, added_workouts_association, Exercise_photo, DifficultyWorkout
 from .schemas import WorkoutCreate, ExerciseCreate, SetCreate, WorkoutUpdate, ExerciseUpdate, SetUpdate
 
 router = APIRouter(
