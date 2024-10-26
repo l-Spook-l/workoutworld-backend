@@ -1,5 +1,5 @@
 from typing import Optional
-
+from pydantic import Field, BaseModel, EmailStr
 from fastapi_users import schemas
 from pydantic import Field
 from pydantic import BaseModel
@@ -9,8 +9,8 @@ class UserRead(schemas.BaseUser[int]):
     id: int
     first_name: str
     last_name: str
-    # email: str
-    phone: str = None
+    email: EmailStr
+    phone: Optional[str] = None
     role_id: int
     is_active: bool = True
     is_superuser: bool = False
@@ -24,7 +24,7 @@ class UserRead(schemas.BaseUser[int]):
 class UserCreate(schemas.BaseUserCreate):
     first_name: str = Field(min_length=2)
     last_name: str = Field(min_length=2)
-    # email: str
+    email: EmailStr
     phone: str
     password: str = Field(min_length=8)
     is_active: Optional[bool] = True
@@ -39,7 +39,7 @@ class UserUpdate(schemas.BaseUserUpdate):
 
 
 class PasswordResetRequest(BaseModel):
-    email: str
+    email: EmailStr
 
 
 class PasswordReset(BaseModel):
@@ -49,5 +49,5 @@ class PasswordReset(BaseModel):
 
 class SendMessageAdmin(BaseModel):
     name: str
-    email: str
+    email: EmailStr
     message: str
