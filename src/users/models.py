@@ -1,12 +1,8 @@
 from __future__ import annotations  # Makes importing models unnecessary
-
 from datetime import datetime
-
 from sqlalchemy import String, ForeignKey, Boolean
 from sqlalchemy.orm import relationship, Mapped, mapped_column
-
 from fastapi_users.db import SQLAlchemyBaseUserTable
-
 from src.core.database import Base
 
 
