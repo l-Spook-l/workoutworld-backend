@@ -87,10 +87,10 @@ class TestRegisterUser:
             {"type": "string_too_short", "loc": ["body", "password"],
              "msg": "String should have at least 8 characters", "input": "", "ctx": {"min_length": 8}},
             {"type": "string_too_short", "loc": ["body", "first_name"],
-             "msg": "String should have at least 5 characters", "input": "", "ctx": {"min_length": 5}},
+             "msg": "String should have at least 2 characters", "input": "", "ctx": {"min_length": 2}},
             {"type": "string_too_short", "loc": ["body", "last_name"],
-             "msg": "String should have at least 5 characters", "input": "",
-             "ctx": {"min_length": 5}}]}),
+             "msg": "String should have at least 2 characters", "input": "",
+             "ctx": {"min_length": 2}}]}),
         ({
              "email": "test@example.com",
              "password": "short",
@@ -101,11 +101,11 @@ class TestRegisterUser:
             {"type": "string_too_short", "loc": ["body", "password"], "msg": "String should have at least 8 characters",
              "input": "short", "ctx": {"min_length": 8}},
             {"type": "string_too_short", "loc": ["body", "first_name"],
-             "msg": "String should have at least 5 characters",
-             "input": "", "ctx": {"min_length": 5}},
+             "msg": "String should have at least 2 characters",
+             "input": "", "ctx": {"min_length": 2}},
             {"type": "string_too_short", "loc": ["body", "last_name"],
-             "msg": "String should have at least 5 characters",
-             "input": "", "ctx": {"min_length": 5}}]}),
+             "msg": "String should have at least 2 characters",
+             "input": "", "ctx": {"min_length": 2}}]}),
         ({
              "email": "test@example.com",
              "password": "valid_password",
@@ -114,11 +114,11 @@ class TestRegisterUser:
              "phone": ""
          }, 422, {"detail": [
             {"type": "string_too_short", "loc": ["body", "first_name"],
-             "msg": "String should have at least 5 characters",
-             "input": "J", "ctx": {"min_length": 5}},
+             "msg": "String should have at least 2 characters",
+             "input": "J", "ctx": {"min_length": 2}},
             {"type": "string_too_short", "loc": ["body", "last_name"],
-             "msg": "String should have at least 5 characters",
-             "input": "", "ctx": {"min_length": 5}}]}),
+             "msg": "String should have at least 2 characters",
+             "input": "", "ctx": {"min_length": 2}}]}),
         ({
              "email": "test@example.com",
              "password": "valid_password",
@@ -127,8 +127,8 @@ class TestRegisterUser:
              "phone": ""
          }, 422, {"detail": [
             {"type": "string_too_short", "loc": ["body", "last_name"],
-             "msg": "String should have at least 5 characters",
-             "input": "", "ctx": {"min_length": 5}}]}),
+             "msg": "String should have at least 2 characters",
+             "input": "", "ctx": {"min_length": 2}}]}),
         ({
              "email": "user1@example.com",
              "password": "valid_password",
