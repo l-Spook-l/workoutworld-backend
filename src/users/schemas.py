@@ -1,8 +1,6 @@
 from typing import Optional
 from pydantic import Field, BaseModel, EmailStr
 from fastapi_users import schemas
-from pydantic import Field
-from pydantic import BaseModel
 
 
 class UserRead(schemas.BaseUser[int]):
@@ -17,7 +15,7 @@ class UserRead(schemas.BaseUser[int]):
     is_verified: bool = False
 
     class Config:
-        # orm_mode = True
+        orm_mode = True
         from_attributes = True
 
 
