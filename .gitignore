@@ -1,6 +1,8 @@
 .env
-.env-non-dev
+.env-dev
 venv
 .idea
 __pycache__/
 *.pyc
+docker-compose.yml
+src/core/flower.py
