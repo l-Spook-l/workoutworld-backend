@@ -1,11 +1,9 @@
 from __future__ import annotations
-
 from datetime import datetime
-
 from sqlalchemy import Column, String, ForeignKey, Table
 from sqlalchemy.orm import relationship, Mapped, mapped_column
-
 from src.core.database import Base
+
 
 added_workouts_association = Table(
     "added_workouts_association",
