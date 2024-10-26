@@ -637,17 +637,21 @@ async def delete_added_sets(exercise_id: int, photo_ids: list[int] = Query(),
             photo_path = f"src/{photo['Exercise_photo'].photo}"
             if os.path.exists(photo_path):
                 os.remove(photo_path)
-        print("Файл успешно удален")
+        print("File deleted successfully")
         del_photos = delete(Exercise_photo).filter(Exercise_photo.id.in_(photo_ids))
         await session.execute(del_photos)
         await session.commit()
+
         return {
             "status": "success",
             "details": None,
         }
     except FileNotFoundError:
-        print("Файл не найден")
-    except Exception:
+        raise HTTPException(status_code=404, detail={
+            "status": "error",
+            "details": "File not found"
+        })
+    except Exception as e:
         raise HTTPException(status_code=500, detail={
             "status": "error",
             "data": str(e),
