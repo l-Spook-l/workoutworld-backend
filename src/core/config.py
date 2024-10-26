@@ -1,7 +1,6 @@
 import os
 from dotenv import load_dotenv
 
-
 load_dotenv()
 
 CLIENT_IP = os.environ.get("CLIENT_IP")
@@ -22,7 +21,6 @@ DB_NAME_TEST = os.environ.get("DB_NAME_TEST")
 DATABASE_URL_TEST = \
     f"postgresql+asyncpg://{DB_USER_TEST}:{DB_PASSWORD_TEST}@{DB_HOST_TEST}:{DB_PORT_TEST}/{DB_NAME_TEST}"
 
-
 REDIS_PORT = os.environ.get("REDIS_PORT")
 
 SECRET_KEY = os.environ.get("SECRET_KEY")
@@ -35,3 +33,8 @@ SENTRY_DNS = os.environ.get("SENTRY_DNS")
 
 SMTP_USER_EMAIL = os.environ.get("SMTP_USER_EMAIL")
 SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD")
+
+ALLOWED_ORIGINS = os.environ.get(
+    "ALLOWED_ORIGINS",
+    "http://localhost:3000,http://127.0.0.1:3000"  # Default value
+)

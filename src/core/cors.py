@@ -1,14 +1,9 @@
 from fastapi.middleware.cors import CORSMiddleware
+from .config import ALLOWED_ORIGINS
 
 
 def setup_cors(app):
-    origins = [
-        f"http://localhost:3000",
-        f"http://45.137.66.74:3000",
-        f"https://45.137.66.74:3000",
-        f"http://vm4791907.25ssd.had.wf",
-        f"https://vm4791907.25ssd.had.wf",
-    ]
+    origins = ALLOWED_ORIGINS.split(",")
 
     app.add_middleware(
         CORSMiddleware,
