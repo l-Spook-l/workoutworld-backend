@@ -1,0 +1,128 @@
+services:
+  db:
+    image: postgres:15.3-alpine3.18
+    container_name: db_app
+    command: -p 5435
+    restart: always
+    expose:
+      - 5435
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    env_file:
+      - .env-dev
+    networks:
+      - mynetwork_dev
+
+  db_test:
+    image: postgres:15.3-alpine3.18
+    container_name: db_app_test
+    restart: always
+    command: -p 5439
+    expose:
+      - 5439
+    volumes:
+      - pgdata_test:/var/lib/postgresql/data_test
+    environment:
+      - POSTGRES_DB=postgres_test
+      - POSTGRES_USER=postgres_test
+      - POSTGRES_PASSWORD=postgres_test
+    networks:
+      - mynetwork_dev
+
+  redis:
+    image: redis:7
+    container_name: redis_app
+    ports:
+      - "6379:6379"
+    networks:
+      - mynetwork_dev
+    depends_on:
+      - db
+      - db_test
+
+  server_app:
+    build:
+      context: .
+    env_file:
+      - .env-dev
+    container_name: fastapi_app
+    command: ["/fastapi_app/scripts/app_run.sh"]
+    ports:
+      - "8000:8000"
+    networks:
+      - mynetwork_dev
+    depends_on:
+      - redis
+
+  celery:
+    build: .
+    container_name: celery_app
+    command: ["/fastapi_app/scripts/celery.sh", "celery"]
+    networks:
+      - mynetwork_dev
+    depends_on:
+      - server_app
+
+  flower:
+    build: .
+    container_name: flower_app
+    command: ["/fastapi_app/scripts/celery.sh", "flower"]
+    ports:
+      - "5555:5555"
+#    environment:
+#      - FLOWER_BASIC_AUTH=username:password
+    networks:
+      - mynetwork_dev
+    depends_on:
+      - celery
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+#    command:
+#      - "--config.file=/etc/prometheus/prometheus.yml"  # Явно указываем путь к конфигу
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml  # конфигурационный файл Prometheus
+      - prometheus_data:/prometheus  # Volume для сохранения данных Prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - mynetwork_dev
+    depends_on:
+      - server_app
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - grafana-config:/etc/grafana
+    ports:
+      - "3030:3000"
+    #    environment:
+#      - .env-dev
+    networks:
+      - mynetwork_dev
+    depends_on:
+      - prometheus
+
+  react_app:
+    build:
+      context: ../client
+    ports:
+      - "3000:3000"
+    networks:
+      - mynetwork_dev
+    depends_on:
+      - server_app
+
+networks:
+  mynetwork_dev:
+    driver: bridge
+
+volumes:
+  pgdata:
+  pgdata_test:
+  prometheus_data:
+  grafana_data:
+  grafana-config:
