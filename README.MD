@@ -9,6 +9,9 @@
 ![RestAPI](https://img.shields.io/badge/RestAPI-Development-yellow)
 ![NGINX](https://img.shields.io/badge/NGINX-Web_Server-green?logo=nginx)
 ![Docker](https://img.shields.io/badge/Docker-Containerization-blue?logo=docker)
+![Celery](https://img.shields.io/badge/Celery-Task_Queue-blue?logo=celery)
+![Redis](https://img.shields.io/badge/Redis-Cache-red?logo=redis)
+![Grafana](https://img.shields.io/badge/Grafana-Monitoring-green?logo=grafana)
 
 # Project Description
 
@@ -26,9 +29,21 @@ This repository contains the server-side part of the project built on FastAPI. I
 - Working with a PostgreSQL database using SQLAlchemy ORM.
 - Supporting CRUD operations for workout data.
 
+
+## Update - October 2024
+
+### New Features and Improvements
+
+- **Admin Panel**: Implemented a full-featured admin panel for easier management of settings, permissions, and data monitoring.
+- **Celery Integration**: Added Celery for asynchronous task management, improving performance and user experience.
+- **Grafana Support**: Integrated Grafana for enhanced data visualization and real-time monitoring through customizable dashboards.
+- **Code Structure**: Refactored the codebase for improved maintainability and readability.
+- **Automated Tests**: Introduced a suite of tests to ensure stability and catch potential issues early in development.
+
+
 ## Installation Requirements
 
-- Python 3.10
+- Python 3.12
 - Dependencies from the requirements.txt file
 
 ## Usage
