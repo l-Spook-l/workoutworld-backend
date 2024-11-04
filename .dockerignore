@@ -1,2 +1,6 @@
 Dockerfile
 .idea
+venv
+tests
+.git
+.gitignore
