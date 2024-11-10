@@ -38,3 +38,5 @@ ALLOWED_ORIGINS = os.environ.get(
     "ALLOWED_ORIGINS",
     "http://localhost:3000,http://127.0.0.1:3000"  # Default value
 )
+
+METRICS_URL = os.environ.get("METRICS_URL")
