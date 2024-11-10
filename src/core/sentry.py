@@ -1,5 +1,6 @@
 import sentry_sdk
-from src.core.config import SENTRY_DNS
+from .config import SENTRY_DNS
+
 
 sentry_sdk.init(
     dsn=SENTRY_DNS,
