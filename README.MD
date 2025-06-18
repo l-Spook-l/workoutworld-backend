@@ -1,4 +1,4 @@
-# FastAPI React WorkoutWorld website server
+# WorkoutWorld Backend
 
 ![FastAPI](https://img.shields.io/badge/FastAPI-Web_Framework-009688?logo=fastapi)
 ![Python](https://img.shields.io/badge/Python-3.x-blue?logo=python)
