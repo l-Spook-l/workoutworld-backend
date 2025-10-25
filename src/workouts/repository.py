@@ -1,0 +1,2 @@
+class ExerciseRepository:
+    pass
