@@ -11,8 +11,9 @@ from sqlalchemy.orm.exc import NoResultFound
 from src.users.base_config import current_user
 from src.core.database import get_async_session
 from src.users.models import User
-from .models import Workout, Exercise, Set, added_workouts_association, Exercise_photo, DifficultyWorkout
-from .schemas import WorkoutCreate, ExerciseCreate, SetCreate, WorkoutUpdate, ExerciseUpdate, SetUpdate
+from src.workouts.models import Workout, Exercise, Set, added_workouts_association, Exercise_photo, DifficultyWorkout
+from src.workouts.schemas import WorkoutCreate, ExerciseCreate, SetCreate, WorkoutUpdate, ExerciseUpdate, SetUpdate
+from src.workouts.service import exercise_service, workout_service, set_service
 
 router = APIRouter(
     prefix="/workouts",
@@ -24,10 +25,7 @@ router = APIRouter(
 async def add_workout(new_workout: WorkoutCreate, user: User = Depends(current_user),
                       session: AsyncSession = Depends(get_async_session)):
     try:
-        stat = insert(Workout).values(**new_workout.model_dump()).returning(Workout.id)
-        result = await session.execute(stat)
-        workout_id = result.scalar()
-        await session.commit()
+        workout_id = await workout_service.create_workout(session, new_workout)
         return {"status": "success", "workout_ID": workout_id}
     except Exception:
         raise HTTPException(status_code=500, detail={
@@ -50,10 +48,6 @@ async def add_video_exercise(
         number_in_workout: int = Form(...),
         user: User = Depends(current_user),
         session: AsyncSession = Depends(get_async_session)):
-    if video:
-        if video[:7] != "<iframe" or video[-7:] != "iframe>":
-            video = ""
-
     try:
         exercise_data = ExerciseCreate(
             name=name,
@@ -66,21 +60,7 @@ async def add_video_exercise(
             number_in_workout=number_in_workout,
         )
 
-        stat = insert(Exercise).values(**exercise_data.model_dump(exclude_none=True)).returning(Exercise.id)
-        result = await session.execute(stat)
-        exercise_id = result.scalar()
-
-        if photos:
-            for photo in photos:
-                photo.filename = photo.filename.lower()
-                path_photos = f"src/media/Photos_exercise/{exercise_id}_{name}_{uuid4()}.png"
-                async with aiofiles.open(path_photos, "+wb") as buffer:
-                    data = await photo.read()
-                    await buffer.write(data)
-                add_photos = insert(Exercise_photo).values(photo=path_photos[4:], exercise_id=exercise_id)
-                await session.execute(add_photos)
-
-        await session.commit()
+        exercise_id = await exercise_service.create_exercise(session, exercise_data, photos)
         return {"status": "success", "exercise_ID": exercise_id}
     except ValidationError as e:
         error_messages = []
@@ -95,10 +75,7 @@ async def add_video_exercise(
 async def add_set(number_sets: int, new_set: SetCreate, user: User = Depends(current_user),
                   session: AsyncSession = Depends(get_async_session)):
     try:
-        for _ in range(number_sets):
-            stat = insert(Set).values(**new_set.model_dump())
-            await session.execute(stat)
-        await session.commit()
+        await set_service.create_set(session, number_sets, new_set)
         return {"status": "success"}
     except Exception:
         raise HTTPException(status_code=500, detail={
@@ -111,41 +88,17 @@ async def add_set(number_sets: int, new_set: SetCreate, user: User = Depends(cur
 @router.post("/add-workout-to-user/{user_id}/{workout_id}")
 async def add_workout_to_user(user_id: int, workout_id: int, user: User = Depends(current_user),
                               session: AsyncSession = Depends(get_async_session)):
-    existing_association = select(added_workouts_association).where(
-        (added_workouts_association.c.user_table == user_id) &
-        (added_workouts_association.c.workout_table == workout_id)
-    )
-    result_existing = await session.execute(existing_association)
+    # TODO try: - проблема с ошибками
+    await workout_service.add_user_workout_association(session, user, user_id, workout_id)
+    await session.commit()
 
-    if user.id == user_id:
-        raise HTTPException(status_code=400, detail="This workout cannot be added to the workout creator")
-
-    if result_existing.scalar():
-        raise HTTPException(status_code=400, detail="This workout is already added to the user")
-
-    try:
-        query_user = select(User).filter(User.id == user_id)
-        result_user = await session.execute(query_user)
-        user = result_user.first()
-
-        query_workout = select(Workout).filter(Workout.id == workout_id)
-        result_workout = await session.execute(query_workout)
-        workout = result_workout.first()
-
-        if not user or not workout:
-            raise HTTPException(status_code=404, detail="User or Workout not found")
-
-        new_association = insert(added_workouts_association).values(user_table=user_id, workout_table=workout_id)
-        await session.execute(new_association)
-        await session.commit()
-
-        return {"status": "success", "message": "Workout added to user"}
-    except Exception:
-        raise HTTPException(status_code=500, detail={
-            "status": "error",
-            "data": None,
-            "details": None,
-        })
+    return {"status": "success", "message": "Workout added to user"}
+    # except Exception:
+    #     raise HTTPException(status_code=500, detail={
+    #         "status": "error",
+    #         "data": None,
+    #         "details": None,
+    #     })
 
 
 @router.post("/add-new-photos")
@@ -155,29 +108,14 @@ async def add_video_exercise(
         photos: list[UploadFile] = None,
         user: User = Depends(current_user),
         session: AsyncSession = Depends(get_async_session)):
-    exercise = await session.get(Exercise, exercise_id)
-    if not exercise:
-        raise HTTPException(status_code=404, detail="Exercise not found")
-
     try:
-        if photos:
-            for photo in photos:
-                photo.filename = photo.filename.lower()
-                path_photos = f"src/media/Photos_exercise/{exercise_id}_{exercise_name}_{uuid4()}.png"
-                async with aiofiles.open(path_photos, "+wb") as buffer:
-                    data = await photo.read()
-                    await buffer.write(data)
-                add_photos = insert(Exercise_photo).values(photo=path_photos[4:], exercise_id=exercise_id)
-                await session.execute(add_photos)
-
-        await session.commit()
+        await exercise_service.add_new_photos_exercise(session, exercise_id, exercise_name, photos)
         return {"status": "success", "exercise_ID": exercise_id}
     except ValidationError as e:
-
         raise HTTPException(status_code=422, detail=e)
 
 
-@router.get("/")
+@router.get("/")  # TODO наверно изменить роут
 async def get_workouts(
         name: str = Query(None, description="Filter by name"),
         difficulty: list[str] = Query(None, description="Filter by difficulty"),
@@ -185,26 +123,14 @@ async def get_workouts(
         limit: int = Query(12, description="Number of records to return"),
         page: int = Query(1, description="Page number"),
         session: AsyncSession = Depends(get_async_session)):
-    # Normalizing the query for security (preventing SQL injections)
-    query_name = f"%{name}%"
-
     try:
-        query = select(Workout)
-        if name:
-            query = query.filter(Workout.name.ilike(query_name))
-        if difficulty:
-            query = query.filter(Workout.difficulty.in_(difficulty))
-
-        query = query.limit(limit).offset(skip).filter(Workout.is_public)
-        result = await session.execute(query)
-        total_count = await session.scalar(
-            select(func.count())
-            .select_from(Workout)
-            .filter(Workout.is_public)
-            .filter(Workout.name.ilike(query_name) if name else True)
-            .filter(Workout.difficulty.in_(difficulty) if difficulty else True)
+        workouts, total_count = await workout_service.get_filtered_workouts(
+            session=session,
+            name=name,
+            difficulty=difficulty,
+            skip=skip,
+            limit=limit,
         )
-        workouts = result.mappings().all()
 
         return {
             "status": "success",
