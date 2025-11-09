@@ -51,6 +51,53 @@ class WorkoutService:
 
         await session.commit()
 
+    async def get_one_workout(self, session: AsyncSession, workout_id: int, user_id: int = None):
+        workout = await self.repo.get_one_workout(session, workout_id)
+        if not workout.is_public and user_id != workout.user_id:
+            raise HTTPException(status_code=403)
+        return workout
+
+    async def get_active_workout(self, session: AsyncSession, workout_id: int, user_id: int):
+        workout = await self.get_one_workout(session, workout_id, user_id)
+        association_query_result = await self.repo.get_active_workout(session, workout_id, user_id)
+        if not association_query_result.first() and workout.user_id != user_id:
+            raise HTTPException(status_code=403)
+        return workout
+
+    async def get_user_added_workouts(
+            self,
+            session: AsyncSession,
+            user_id: int | None = None,
+            name: str | None = None,
+            difficulty: list[str] | None = None,
+            skip: int = 0,
+            limit: int = 12,
+    ):
+        user = await user_repo.get_user_by_id(session, user_id)
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        workouts = await self.repo.get_user_added_workouts(
+            session=session,
+            user_id=user_id,
+            name=name,
+            difficulty=difficulty,
+            skip=skip,
+            limit=limit,
+        )
+        total_count = await self.repo.count_user_added_workouts(
+            session=session,
+            user_id=user_id,
+            name=name,
+            difficulty=difficulty
+        )
+
+        return workouts, total_count
+
+    async def get_workout_difficulties(self, session: AsyncSession):
+        workout_difficulties = await self.repo.get_workout_difficulties(session)
+        return workout_difficulties
+
 
 class ExerciseService:
     def __init__(self, repo: ExerciseRepository):
