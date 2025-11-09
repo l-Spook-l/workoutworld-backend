@@ -150,14 +150,31 @@ async def get_workouts(
 
 @router.get("/workout/{workout_id}")
 async def get_one_workout(workout_id: int, user_id: int = None, session: AsyncSession = Depends(get_async_session)):
-    query = (select(Workout).filter(Workout.id == workout_id).
-             options(selectinload(Workout.exercise).options(selectinload(Exercise.photo))))
     try:
-        result = await session.execute(query)
-        workout = workout_check = result.mappings().one()
-        if not workout_check.Workout.is_public and user_id != workout_check.Workout.user_id:
-            raise HTTPException(status_code=403)
+        workout = await workout_service.get_one_workout(session, workout_id, user_id)
+        return {
+            "status": "success",
+            "data": workout,
+            "details": None,
+        }
+    except NoResultFound:
+        raise HTTPException(status_code=404, detail="This workout not found")
+    except HTTPException as http_error:
+        if http_error.status_code == 403:
+            raise HTTPException(status_code=403, detail="Access denied")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Server error")
 
+
+@router.get("/active-workout", dependencies=[Depends(current_user)])
+async def get_active_workout(
+        workout_id: int,
+        user_id: int,
+        # user: User = Depends(current_user),
+        session: AsyncSession = Depends(get_async_session)
+):
+    try:
+        workout = await workout_service.get_active_workout(session, workout_id, user_id)
         return {
             "status": "success",
             "data": workout,
@@ -173,79 +190,32 @@ async def get_one_workout(workout_id: int, user_id: int = None, session: AsyncSe
         raise HTTPException(status_code=500, detail="Server error")
 
 
-@router.get("/active-workout")
-async def get_one_workout(workout_id: int, user_id: int,
-                          user: User = Depends(current_user),
-                          session: AsyncSession = Depends(get_async_session)):
-    query = (select(Workout).filter(Workout.id == workout_id).
-             options(selectinload(Workout.exercise).options(selectinload(Exercise.photo))))
+@router.get("/user-workouts", dependencies=[Depends(current_user)])
+async def get_user_workouts(
+        user_id: int,
+        name: str = Query(None, description="Filter by name"),
+        difficulty: list[str] = Query(None, description="Filter by difficulty"),
+        skip: int = Query(0, description="Number of records to skip"),
+        limit: int = Query(9, description="Number of records to return"),
+        is_public: bool = Query(None, description="Filter by status"),
+        page: int = Query(1, description="Page number"),
+        # user: User = Depends(current_user),
+        session: AsyncSession = Depends(get_async_session)
+):
     try:
-        result = await session.execute(query)
-        workout = workout_check = result.mappings().one()
-
-        association_query = (select(added_workouts_association)
-                             .filter(added_workouts_association.c.workout_table == workout_id,
-                                     added_workouts_association.c.user_table == user_id))
-        association_query_result = await session.execute(association_query)
-
-        if not workout_check.Workout.is_public and user_id != workout_check.Workout.user_id:
-            raise HTTPException(status_code=403)
-
-        if not association_query_result.first() and workout_check.Workout.user_id != user_id:
-            raise HTTPException(status_code=403)
-
-        return {
-            "status": "success",
-            "data": workout,
-            "details": None,
-        }
-
-    except NoResultFound:
-        raise HTTPException(status_code=404, detail="This workout not found")
-    except HTTPException as http_error:
-        if http_error.status_code == 403:
-            raise HTTPException(status_code=403, detail="Access denied")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail="Server error")
-
-
-@router.get("/user-workouts")
-async def get_my_workouts(user_id: int,
-                          name: str = Query(None, description="Filter by name"),
-                          difficulty: list[str] = Query(None, description="Filter by difficulty"),
-                          skip: int = Query(0, description="Number of records to skip"),
-                          limit: int = Query(9, description="Number of records to return"),
-                          is_public: bool = Query(None, description="Filter by status"),
-                          page: int = Query(1, description="Page number"),
-                          user: User = Depends(current_user),
-                          session: AsyncSession = Depends(get_async_session)):
-    query_name = f"%{name}%"
-
-    try:
-        query = select(Workout)
-
-        if name:
-            query = query.filter(Workout.name.ilike(query_name))
-        if difficulty:
-            query = query.filter(Workout.difficulty.in_(difficulty))
-        if is_public is not None:
-            query = query.filter(Workout.is_public == is_public)
-
-        query = query.filter(Workout.user_id == user_id).limit(limit).offset(skip)
-        result = await session.execute(query)
-        my_workouts = result.mappings().all()
-        total_count = await session.scalar(
-            select(func.count())
-            .select_from(Workout)
-            .filter(Workout.user_id == user_id)
-            .filter(Workout.name.ilike(query_name) if name else True)
-            .filter(Workout.difficulty.in_(difficulty) if difficulty else True)
-            .filter(Workout.is_public == is_public if is_public is not None else True)
+        user_workouts, total_count = await workout_service.get_filtered_workouts(
+            session=session,
+            user_id=user_id,
+            name=name,
+            difficulty=difficulty,
+            skip=skip,
+            limit=limit,
+            is_public=is_public
         )
 
         return {
             "status": "success",
-            "data": my_workouts,
+            "data": user_workouts,
             "skip": skip,
             "limit": limit,
             "total_count": total_count,
@@ -259,43 +229,25 @@ async def get_my_workouts(user_id: int,
         })
 
 
-@router.get("/get-user-added-workouts/{user_id}")
-async def get_user_workouts(user_id: int,
-                            name: str = Query(None, description="Filter by name"),
-                            difficulty: list[str] = Query(None, description="Filter by difficulty"),
-                            skip: int = Query(0, description="Number of records to skip"),
-                            limit: int = Query(9, description="Number of records to return"),
-                            page: int = Query(1, description="Page number"),
-                            user: User = Depends(current_user),
-                            session: AsyncSession = Depends(get_async_session)):
-    query_user = select(User).filter(User.id == user_id)
-    result_user = await session.execute(query_user)
-    user = result_user.first()
-
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    query_name = f"%{name}%"
-
+@router.get("/get-user-added-workouts/{user_id}", dependencies=[Depends(current_user)])
+async def get_user_added_workouts(
+        user_id: int,
+        name: str = Query(None, description="Filter by name"),
+        difficulty: list[str] = Query(None, description="Filter by difficulty"),
+        skip: int = Query(0, description="Number of records to skip"),
+        limit: int = Query(9, description="Number of records to return"),
+        page: int = Query(1, description="Page number"),
+        # user: User = Depends(current_user),
+        session: AsyncSession = Depends(get_async_session)
+):
     try:
-        query = select(Workout)
-        query = query.join(added_workouts_association).filter(added_workouts_association.c.user_table == user_id)
-
-        if name:
-            query = query.filter(Workout.name.ilike(query_name))
-        if difficulty:
-            query = query.filter(Workout.difficulty.in_(difficulty))
-
-        query = query.limit(limit).offset(skip)
-        result = await session.execute(query)
-        user_workouts = result.mappings().all()
-
-        total_count = await session.scalar(
-            select(func.count())
-            .select_from(Workout).join(added_workouts_association)
-            .filter(added_workouts_association.c.user_table == user_id)
-            .filter(Workout.name.ilike(query_name) if name else True)
-            .filter(Workout.difficulty.in_(difficulty) if difficulty else True)
+        user_workouts, total_count = await workout_service.get_user_added_workouts(
+            session=session,
+            user_id=user_id,
+            name=name,
+            difficulty=difficulty,
+            skip=skip,
+            limit=limit
         )
 
         return {
@@ -316,14 +268,12 @@ async def get_user_workouts(user_id: int,
 
 
 @router.get("/workout-difficulties")
-async def get_difficulty(session: AsyncSession = Depends(get_async_session)):
+async def get_difficulties(session: AsyncSession = Depends(get_async_session)):
     try:
-        query = select(DifficultyWorkout)
-        result = await session.execute(query)
-        difficulty = result.mappings().all()
+        difficulties = await workout_service.get_workout_difficulties(session=session)
         return {
             "status": "success",
-            "data": difficulty,
+            "data": difficulties,
             "details": None,
         }
     except Exception:
