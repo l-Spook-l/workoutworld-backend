@@ -3,45 +3,62 @@ from uuid import uuid4
 import aiofiles
 from sqlalchemy import insert, select, func
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
-from src.users.models import User
-from src.workouts.models import Exercise, Exercise_photo, Workout, Set, added_workouts_association
+# from src.users.models import User
+from src.users.service import user_repo
+from src.workouts.models import Exercise, Exercise_photo, Workout, Set, added_workouts_association, DifficultyWorkout
+from src.workouts.schemas import WorkoutUpdate, ExerciseUpdate, SetUpdate
 
 
 class WorkoutRepository:
-    async def create_workout(self, session, data):
+    async def create_workout(self, session: AsyncSession, data):
         stat = insert(Workout).values(**data.model_dump()).returning(Workout.id)
         result = await session.execute(stat)
         workout_id = result.scalar()
         return workout_id
 
     @staticmethod
-    async def get_workouts(session,
-                           name: str | None = None,
-                           difficulty: list[str] | None = None,
-                           skip: int = 0,
-                           limit: int = 12
-                           ):
-        query = select(Workout).filter(Workout.is_public)
+    async def get_workouts(
+            session: AsyncSession,
+            user_id: int | None = None,
+            name: str | None = None,
+            difficulty: list[str] | None = None,
+            skip: int = 0,
+            limit: int = 12,
+            is_public: bool | None = None
+    ):
+        query = select(Workout)
+        if user_id:
+            query = query.filter(Workout.user_id == user_id)
         if name:
             query = query.filter(Workout.name.ilike(f"%{name}%"))
         if difficulty:
             query = query.filter(Workout.difficulty.in_(difficulty))
+        if is_public is not None:
+            query = query.filter(Workout.is_public == is_public)
         query = query.limit(limit).offset(skip)
         result = await session.execute(query)
         workouts = result.mappings().all()
         return workouts
 
     @staticmethod
-    async def count_workouts(session: AsyncSession,
-                             name: str | None = None,
-                             difficulty: list[str] | None = None,
-                             ):
-        query = select(func.count()).select_from(Workout).filter(Workout.is_public)
+    async def count_workouts(
+            session: AsyncSession,
+            user_id: int | None = None,
+            name: str | None = None,
+            difficulty: list[str] | None = None,
+            is_public: bool | None = None
+    ):
+        query = select(func.count()).select_from(Workout)
+        if user_id:  # TODO - user_id is not None, for 0 id
+            query = query.filter(Workout.user_id == user_id)
         if name:
             query = query.filter(Workout.name.ilike(f"%{name}%"))
         if difficulty:
             query = query.filter(Workout.difficulty.in_(difficulty))
+        if is_public is not None:
+            query = query.filter(Workout.is_public == is_public)
 
         total = await session.scalar(query)
         return total
@@ -69,6 +86,75 @@ class WorkoutRepository:
         await session.execute(new_association)
 
         return True
+
+    @staticmethod
+    async def get_workout_by_id(session: AsyncSession, workout_id: int):
+        return await session.get(Workout, workout_id)
+
+    async def get_one_workout(self, session: AsyncSession, workout_id: int) -> Workout | None:
+        query = select(Workout).filter(Workout.id == workout_id).options(
+            selectinload(Workout.exercise).options(selectinload(Exercise.photo)))
+        result = await session.execute(query)
+        # mapping = result.mappings().one()
+        mapping = result.mappings().first()
+        workout = mapping["Workout"] if mapping else None
+        return workout
+
+    async def get_active_workout(self, session: AsyncSession, workout_id: int, user_id: int):
+        association_query = select(added_workouts_association).filter(
+            added_workouts_association.c.workout_table == workout_id,
+            added_workouts_association.c.user_table == user_id)
+
+        association_query_result = await session.execute(association_query)
+        return association_query_result
+
+    @staticmethod
+    async def get_user_added_workouts(
+            session: AsyncSession,
+            user_id: int | None = None,
+            name: str | None = None,
+            difficulty: list[str] | None = None,
+            skip: int = 0,
+            limit: int = 12,
+    ):
+        query = select(Workout)
+        query = query.join(added_workouts_association).filter(added_workouts_association.c.user_table == user_id)
+
+        if name:
+            query = query.filter(Workout.name.ilike(f"%{name}%"))
+        if difficulty:
+            query = query.filter(Workout.difficulty.in_(difficulty))
+
+        query = query.limit(limit).offset(skip)
+        result = await session.execute(query)
+        user_workouts = result.mappings().all()
+        return user_workouts
+
+    @staticmethod
+    async def count_user_added_workouts(
+            session: AsyncSession,
+            user_id: int,
+            name: str | None = None,
+            difficulty: list[str] | None = None
+    ):
+        query = (
+            select(func.count())
+            .select_from(Workout)
+            .join(added_workouts_association)
+            .filter(added_workouts_association.c.user_table == user_id)
+        )
+        if name:
+            query = query.filter(Workout.name.ilike(f"%{name}%"))
+        if difficulty:
+            query = query.filter(Workout.difficulty.in_(difficulty))
+        return await session.scalar(query)
+
+    @staticmethod
+    async def get_workout_difficulties(session: AsyncSession):
+        query = select(DifficultyWorkout)
+        result = await session.execute(query)
+        workout_difficulties = result.mappings().all()
+        return workout_difficulties
 
 
 class ExerciseRepository:
