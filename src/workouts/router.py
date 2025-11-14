@@ -284,14 +284,15 @@ async def get_difficulties(session: AsyncSession = Depends(get_async_session)):
         })
 
 
-@router.get("/sets")
-async def get_sets(user_id: int, exercise_ids: list[int] = Query(None),
-                   user: User = Depends(current_user),
-                   session: AsyncSession = Depends(get_async_session)):
+@router.get("/sets", dependencies=[Depends(current_user)])
+async def get_sets(
+        user_id: int,
+        exercise_ids: list[int] = Query(None),
+        # user: User = Depends(current_user),
+        session: AsyncSession = Depends(get_async_session)
+):
     try:
-        query = select(Set).filter(Set.exercise_id.in_(exercise_ids)).filter(Set.user_id == user_id).order_by(Set.id)
-        result = await session.execute(query)
-        sets = result.mappings().all()
+        sets = await set_service.get_sets(session, user_id, exercise_ids)
         return {
             "status": "success",
             "data": sets,
@@ -305,15 +306,16 @@ async def get_sets(user_id: int, exercise_ids: list[int] = Query(None),
         })
 
 
-@router.patch("/workout/update/{workout_id}")
-async def update_workout(workout_id: int, update_data: WorkoutUpdate, user: User = Depends(current_user),
-                         session: AsyncSession = Depends(get_async_session)):
+# TODO проверить роут на корректность обновления другим пользователем
+@router.patch("/workout/update/{workout_id}", dependencies=[Depends(current_user)])
+async def update_workout(
+        workout_id: int,
+        update_data: WorkoutUpdate,
+        # user: User = Depends(current_user),
+        session: AsyncSession = Depends(get_async_session)
+):
     try:
-        query = update(Workout).filter(Workout.id == workout_id).values(**update_data.model_dump(exclude_none=True))
-
-        await session.execute(query)
-        await session.commit()
-
+        await workout_service.update_workout(workout_id, update_data, session)
         return {
             "status": "success",
             "details": None,
@@ -326,19 +328,15 @@ async def update_workout(workout_id: int, update_data: WorkoutUpdate, user: User
         })
 
 
-@router.patch("/exercise/update/{exercise_id}")
-async def update_exercise(exercise_id: int, update_data: ExerciseUpdate, user: User = Depends(current_user),
-                          session: AsyncSession = Depends(get_async_session)):
-    if update_data.video:
-        if update_data.video[:7] != "<iframe" or update_data.video[-7:] != "iframe>":
-            update_data.video = ""
-
+@router.patch("/exercise/update/{exercise_id}", dependencies=[Depends(current_user)])
+async def update_exercise(
+        exercise_id: int,
+        update_data: ExerciseUpdate,
+        # user: User = Depends(current_user),
+        session: AsyncSession = Depends(get_async_session)
+):
     try:
-        query = update(Exercise).filter(Exercise.id == exercise_id).values(**update_data.model_dump(exclude_none=True))
-
-        await session.execute(query)
-        await session.commit()
-
+        await exercise_service.update_exercise(session, exercise_id, update_data)
         return {
             "status": "success",
             "details": None,
@@ -351,15 +349,15 @@ async def update_exercise(exercise_id: int, update_data: ExerciseUpdate, user: U
         })
 
 
-@router.patch("/set/update/{set_id}")
-async def update_set(set_id: int, update_data: SetUpdate, user: User = Depends(current_user),
-                     session: AsyncSession = Depends(get_async_session)):
+@router.patch("/set/update/{set_id}", dependencies=[Depends(current_user)])
+async def update_set(
+        set_id: int,
+        update_data: SetUpdate,
+        # user: User = Depends(current_user),
+        session: AsyncSession = Depends(get_async_session)
+):
     try:
-        query = update(Set).filter(Set.id == set_id).values(**update_data.model_dump(exclude_none=True))
-
-        await session.execute(query)
-        await session.commit()
-
+        await set_service.update_set(session=session, set_id=set_id, data=update_data)
         return {
             "status": "success",
             "details": None,
