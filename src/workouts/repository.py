@@ -19,6 +19,11 @@ class WorkoutRepository:
         return workout_id
 
     @staticmethod
+    async def update_workout(session: AsyncSession, workout_id: int, data: WorkoutUpdate):
+        query = update(Workout).filter(Workout.id == workout_id).values(**data.model_dump(exclude_none=True))
+        await session.execute(query)
+
+    @staticmethod
     async def get_workouts(
             session: AsyncSession,
             user_id: int | None = None,
@@ -156,6 +161,19 @@ class WorkoutRepository:
         workout_difficulties = result.mappings().all()
         return workout_difficulties
 
+    @staticmethod
+    async def delete_created_workout_by_id(session: AsyncSession, workout_id: int):
+        query = delete(Workout).filter(Workout.id == workout_id)
+        await session.execute(query)
+
+    @staticmethod
+    async def delete_added_workout(session: AsyncSession, user_id: int, workout_id: int):
+        query = delete(added_workouts_association).where(
+            (added_workouts_association.c.workout_table == workout_id) and
+            (added_workouts_association.c.user_table == user_id)
+        )
+        await session.execute(query)
+
 
 class ExerciseRepository:
     async def create_exercise(self, session, data):
@@ -164,7 +182,39 @@ class ExerciseRepository:
         exercise_id = result.scalar()
         return exercise_id
 
-    async def save_photos(self, session, exercise_id: int, exercise_name: str, photos: list):
+    @staticmethod
+    async def get_exercise_by_id(session: AsyncSession, exercise_id: int):
+        return await session.get(Exercise, exercise_id)
+
+    async def update_exercise(
+            self,
+            session: AsyncSession,
+            exercise_id: int,
+            update_data: ExerciseUpdate,
+
+    ):
+        query = update(Exercise).filter(Exercise.id == exercise_id).values(**update_data.model_dump(exclude_none=True))
+        await session.execute(query)
+
+    async def get_exercises_by_workout_id(self, session: AsyncSession, workout_id: int):
+        query = await session.execute(select(Exercise).filter(Exercise.workout_id == workout_id))
+        exercises = query.mappings().all()
+        return exercises
+
+    async def get_photos_exercise_by_id(self, session: AsyncSession, exercise_id: int):
+        photos_exercise = await session.execute(
+            select(Exercise_photo).filter(Exercise_photo.exercise_id == exercise_id))
+        result_photos_exercise = photos_exercise.mappings().all()
+        return result_photos_exercise
+
+    async def get_photos_by_ids(self, session: AsyncSession, photo_ids: list[int]):
+        query = select(Exercise_photo).filter(Exercise_photo.id.in_(photo_ids))
+        result = await session.execute(query)
+        photos = result.mappings().all()
+        return photos
+
+    # TODO перенести в слов сервиса т.к. это работа с файловой системой
+    async def save_photos(self, session: AsyncSession, exercise_id: int, exercise_name: str, photos: list):
         for photo in photos:
             photo.filename = photo.filename.lower()
             path_photo = f"src/media/Photos_exercise/{exercise_id}_{exercise_name}_{uuid4()}.png"
@@ -174,9 +224,29 @@ class ExerciseRepository:
             add_photo = insert(Exercise_photo).values(photo=path_photo[4:], exercise_id=exercise_id)
             await session.execute(add_photo)
 
+    async def delete_created_exercise_by_id(self, session: AsyncSession, exercise_id: int):
+        await session.execute(delete(Exercise).filter(Exercise.id == exercise_id))
+
+    async def delete_photos_by_ids(self, session: AsyncSession, photo_ids: list[int]):
+        await session.execute(delete(Exercise_photo).filter(Exercise_photo.id.in_(photo_ids)))
+
 
 class SetRepository:
     async def create_set(self, session, number_sets: int, data):
         for _ in range(number_sets):
             stat = insert(Set).values(**data.model_dump())
             await session.execute(stat)
+
+    async def get_sets(self, session: AsyncSession, user_id: int, exercise_ids: list[int]):
+        query = select(Set).filter(Set.exercise_id.in_(exercise_ids)).filter(Set.user_id == user_id).order_by(Set.id)
+        result = await session.execute(query)
+        sets = result.mappings().all()
+        return sets
+
+    async def update_set(self, session: AsyncSession, set_id: int, update_data: SetUpdate):
+        query = update(Set).filter(Set.id == set_id).values(**update_data.model_dump(exclude_none=True))
+        await session.execute(query)
+
+    async def delete_set(self, session: AsyncSession, exercise_id: int, user_id: int):
+        query = delete(Set).where((Set.exercise_id == exercise_id) and (Set.user_id == user_id))
+        await session.execute(query)
