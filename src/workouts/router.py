@@ -370,31 +370,42 @@ async def update_set(
         })
 
 
-@router.delete("/delete/created-workout")
-async def delete_created_workout(workout_id: int, user: User = Depends(current_user),
-                                 session: AsyncSession = Depends(get_async_session)):
-    workout = await session.get(Workout, workout_id)
+@router.delete("/delete/created-workout", dependencies=[Depends(current_user)])
+async def delete_created_workout(
+        workout_id: int,
+        # user: User = Depends(current_user),
+        session: AsyncSession = Depends(get_async_session)
+):
+    await workout_service.delete_created_workout(workout_id=workout_id, session=session)
+    return {
+        "status": "success",
+        "details": None,
+    }
 
-    if not workout:
-        raise HTTPException(status_code=404, detail="Workout not found")
 
+@router.delete("/delete/exercise", dependencies=[Depends(current_user)])
+async def delete_created_exercise(
+        exercise_id: int,
+        # user: User = Depends(current_user),
+        session: AsyncSession = Depends(get_async_session)
+):
+    await exercise_service.delete_created_exercise(session=session, exercise_id=exercise_id)
+    return {
+        "status": "success",
+        "details": None,
+    }
+
+
+# может поменять роуты местами
+@router.delete("/delete/added-workout", dependencies=[Depends(current_user)])
+async def delete_added_workout(
+        workout_id: int,
+        user_id: int,
+        # user: User = Depends(current_user),
+        session: AsyncSession = Depends(get_async_session)
+):
     try:
-        query_exercises = await session.execute(select(Exercise).filter(Exercise.workout_id == workout_id))
-        exercises = query_exercises.mappings().all()
-        for exercise in exercises:
-            photos_exercise = await session.execute(
-                select(Exercise_photo).filter(Exercise_photo.exercise_id == exercise.Exercise.id))
-            result_photos_exercise = photos_exercise.mappings().all()
-            for photo in result_photos_exercise:
-                photo_path = os.path.join(f'src/{photo.Exercise_photo.photo}')
-                if os.path.exists(photo_path):
-                    os.remove(photo_path)
-
-        del_workout = delete(Workout).filter(Workout.id == workout_id)
-
-        await session.execute(del_workout)
-        await session.commit()
-
+        await workout_service.delete_added_workout(session=session, user_id=user_id, workout_id=workout_id)
         return {
             "status": "success",
             "details": None,
@@ -407,33 +418,15 @@ async def delete_created_workout(workout_id: int, user: User = Depends(current_u
         })
 
 
-@router.delete("/delete/exercise")
-async def delete_created_workout(exercise_id: int,
-                                 user: User = Depends(current_user),
-                                 session: AsyncSession = Depends(get_async_session)):
-    exercise = await session.get(Exercise, exercise_id)
-
-    if not exercise:
-        raise HTTPException(status_code=404, detail="Exercise not found")
-
+@router.delete("/delete/sets", dependencies=[Depends(current_user)])
+async def delete_added_sets(
+        exercise_id: int,
+        user_id: int,
+        # user: User = Depends(current_user),
+        session: AsyncSession = Depends(get_async_session)
+):
     try:
-        query_exercise = await session.execute(select(Exercise).filter(Exercise.id == exercise_id))
-        exercise = query_exercise.mappings().one()
-
-        photos_exercise = await session.execute(
-            select(Exercise_photo).filter(Exercise_photo.exercise_id == exercise.Exercise.id))
-        result_photos_exercise = photos_exercise.mappings().all()
-
-        for photo in result_photos_exercise:
-            photo_path = os.path.join(f'src/{photo.Exercise_photo.photo}')
-            if os.path.exists(photo_path):
-                os.remove(photo_path)
-
-        del_exercise = delete(Exercise).filter(Exercise.id == exercise_id)
-
-        await session.execute(del_exercise)
-        await session.commit()
-
+        await set_service.delete_set(session=session, exercise_id=exercise_id, user_id=user_id)
         return {
             "status": "success",
             "details": None,
@@ -446,76 +439,15 @@ async def delete_created_workout(exercise_id: int,
         })
 
 
-@router.delete("/delete/added-workout")
-async def delete_added_workout(workout_id: int, user_id: int, user: User = Depends(current_user),
-                               session: AsyncSession = Depends(get_async_session)):
-    workout = await session.get(Workout, workout_id)
-
-    if not workout:
-        raise HTTPException(status_code=404, detail="Workout not found")
-
+@router.delete("/delete/photo", dependencies=[Depends(current_user)])
+async def delete_photo(
+        exercise_id: int,
+        photo_ids: list[int] = Query(),
+        # user: User = Depends(current_user),
+        session: AsyncSession = Depends(get_async_session)
+):
     try:
-        query = delete(added_workouts_association).where(
-            (added_workouts_association.c.workout_table == workout_id) and
-            (added_workouts_association.c.user_table == user_id)
-        )
-        await session.execute(query)
-        await session.commit()
-
-        return {
-            "status": "success",
-            "details": None,
-        }
-    except Exception:
-        raise HTTPException(status_code=500, detail={
-            "status": "error",
-            "data": None,
-            "details": None,
-        })
-
-
-@router.delete("/delete/sets")
-async def delete_added_sets(exercise_id: int, user_id: int, user: User = Depends(current_user),
-                            session: AsyncSession = Depends(get_async_session)):
-    try:
-        query = delete(Set).where((Set.exercise_id == exercise_id) and (Set.user_id == user_id))
-        await session.execute(query)
-        await session.commit()
-
-        return {
-            "status": "success",
-            "details": None,
-        }
-    except Exception:
-        raise HTTPException(status_code=500, detail={
-            "status": "error",
-            "data": None,
-            "details": None,
-        })
-
-
-@router.delete("/delete/photo")
-async def delete_added_sets(exercise_id: int, photo_ids: list[int] = Query(),
-                            user: User = Depends(current_user),
-                            session: AsyncSession = Depends(get_async_session)):
-    exercise = await session.get(Exercise, exercise_id)
-
-    if not exercise:
-        raise HTTPException(status_code=404, detail="Exercise not found")
-
-    try:
-        query_photos = select(Exercise_photo).filter(Exercise_photo.id.in_(photo_ids))
-        result_photos = await session.execute(query_photos)
-        photos = result_photos.mappings().all()
-        for photo in photos:
-            photo_path = f"src/{photo['Exercise_photo'].photo}"
-            if os.path.exists(photo_path):
-                os.remove(photo_path)
-        print("File deleted successfully")
-        del_photos = delete(Exercise_photo).filter(Exercise_photo.id.in_(photo_ids))
-        await session.execute(del_photos)
-        await session.commit()
-
+        await exercise_service.delete_photo(session=session, exercise_id=exercise_id, photo_ids=photo_ids)
         return {
             "status": "success",
             "details": None,
