@@ -1,17 +1,12 @@
-import os
-import aiofiles
-from uuid import uuid4
 from pydantic import ValidationError
 from fastapi import APIRouter, Depends, Query, UploadFile, Form
 from fastapi.exceptions import HTTPException
-from sqlalchemy import select, insert, update, func, delete
-from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm.exc import NoResultFound
-from src.users.base_config import current_user
+
 from src.core.database import get_async_session
+from src.users.base_config import current_user
 from src.users.models import User
-from src.workouts.models import Workout, Exercise, Set, added_workouts_association, Exercise_photo, DifficultyWorkout
 from src.workouts.schemas import WorkoutCreate, ExerciseCreate, SetCreate, WorkoutUpdate, ExerciseUpdate, SetUpdate
 from src.workouts.service import exercise_service, workout_service, set_service
 
@@ -21,9 +16,11 @@ router = APIRouter(
 )
 
 
-@router.post("/create_workout")
-async def add_workout(new_workout: WorkoutCreate, user: User = Depends(current_user),
-                      session: AsyncSession = Depends(get_async_session)):
+@router.post("/create_workout", dependencies=[Depends(current_user)])
+async def add_workout(
+        new_workout: WorkoutCreate,
+        session: AsyncSession = Depends(get_async_session)
+):
     try:
         workout_id = await workout_service.create_workout(session, new_workout)
         return {"status": "success", "workout_ID": workout_id}
@@ -35,7 +32,7 @@ async def add_workout(new_workout: WorkoutCreate, user: User = Depends(current_u
         })
 
 
-@router.post("/create_exercise")
+@router.post("/create_exercise", dependencies=[Depends(current_user)])
 async def add_video_exercise(
         name: str = Form(...),
         workout_id: int = Form(...),
@@ -46,8 +43,8 @@ async def add_video_exercise(
         video: str = Form(None),
         photos: list[UploadFile] = None,
         number_in_workout: int = Form(...),
-        user: User = Depends(current_user),
-        session: AsyncSession = Depends(get_async_session)):
+        session: AsyncSession = Depends(get_async_session)
+):
     try:
         exercise_data = ExerciseCreate(
             name=name,
@@ -71,9 +68,12 @@ async def add_video_exercise(
         raise HTTPException(status_code=422, detail=error_messages)
 
 
-@router.post("/create_set")
-async def add_set(number_sets: int, new_set: SetCreate, user: User = Depends(current_user),
-                  session: AsyncSession = Depends(get_async_session)):
+@router.post("/create_set", dependencies=[Depends(current_user)])
+async def add_set(
+        number_sets: int,
+        new_set: SetCreate,
+        session: AsyncSession = Depends(get_async_session)
+):
     try:
         await set_service.create_set(session, number_sets, new_set)
         return {"status": "success"}
@@ -86,8 +86,12 @@ async def add_set(number_sets: int, new_set: SetCreate, user: User = Depends(cur
 
 
 @router.post("/add-workout-to-user/{user_id}/{workout_id}")
-async def add_workout_to_user(user_id: int, workout_id: int, user: User = Depends(current_user),
-                              session: AsyncSession = Depends(get_async_session)):
+async def add_workout_to_user(
+        user_id: int,
+        workout_id: int,
+        user: User = Depends(current_user),
+        session: AsyncSession = Depends(get_async_session)
+):
     # TODO try: - проблема с ошибками
     await workout_service.add_user_workout_association(session, user, user_id, workout_id)
     await session.commit()
@@ -101,13 +105,13 @@ async def add_workout_to_user(user_id: int, workout_id: int, user: User = Depend
     #     })
 
 
-@router.post("/add-new-photos")
-async def add_video_exercise(
+@router.post("/add-new-photos", dependencies=[Depends(current_user)])
+async def add_new_photos_exercise(
         exercise_id: int,
         exercise_name: str,
         photos: list[UploadFile] = None,
-        user: User = Depends(current_user),
-        session: AsyncSession = Depends(get_async_session)):
+        session: AsyncSession = Depends(get_async_session)
+):
     try:
         await exercise_service.add_new_photos_exercise(session, exercise_id, exercise_name, photos)
         return {"status": "success", "exercise_ID": exercise_id}
@@ -122,7 +126,8 @@ async def get_workouts(
         skip: int = Query(0, description="Number of records to skip"),
         limit: int = Query(12, description="Number of records to return"),
         page: int = Query(1, description="Page number"),
-        session: AsyncSession = Depends(get_async_session)):
+        session: AsyncSession = Depends(get_async_session)
+):
     try:
         workouts, total_count = await workout_service.get_filtered_workouts(
             session=session,
@@ -170,7 +175,6 @@ async def get_one_workout(workout_id: int, user_id: int = None, session: AsyncSe
 async def get_active_workout(
         workout_id: int,
         user_id: int,
-        # user: User = Depends(current_user),
         session: AsyncSession = Depends(get_async_session)
 ):
     try:
@@ -199,7 +203,6 @@ async def get_user_workouts(
         limit: int = Query(9, description="Number of records to return"),
         is_public: bool = Query(None, description="Filter by status"),
         page: int = Query(1, description="Page number"),
-        # user: User = Depends(current_user),
         session: AsyncSession = Depends(get_async_session)
 ):
     try:
@@ -237,7 +240,6 @@ async def get_user_added_workouts(
         skip: int = Query(0, description="Number of records to skip"),
         limit: int = Query(9, description="Number of records to return"),
         page: int = Query(1, description="Page number"),
-        # user: User = Depends(current_user),
         session: AsyncSession = Depends(get_async_session)
 ):
     try:
@@ -288,7 +290,6 @@ async def get_difficulties(session: AsyncSession = Depends(get_async_session)):
 async def get_sets(
         user_id: int,
         exercise_ids: list[int] = Query(None),
-        # user: User = Depends(current_user),
         session: AsyncSession = Depends(get_async_session)
 ):
     try:
@@ -311,7 +312,6 @@ async def get_sets(
 async def update_workout(
         workout_id: int,
         update_data: WorkoutUpdate,
-        # user: User = Depends(current_user),
         session: AsyncSession = Depends(get_async_session)
 ):
     try:
@@ -332,7 +332,6 @@ async def update_workout(
 async def update_exercise(
         exercise_id: int,
         update_data: ExerciseUpdate,
-        # user: User = Depends(current_user),
         session: AsyncSession = Depends(get_async_session)
 ):
     try:
@@ -353,7 +352,6 @@ async def update_exercise(
 async def update_set(
         set_id: int,
         update_data: SetUpdate,
-        # user: User = Depends(current_user),
         session: AsyncSession = Depends(get_async_session)
 ):
     try:
@@ -373,7 +371,6 @@ async def update_set(
 @router.delete("/delete/created-workout", dependencies=[Depends(current_user)])
 async def delete_created_workout(
         workout_id: int,
-        # user: User = Depends(current_user),
         session: AsyncSession = Depends(get_async_session)
 ):
     await workout_service.delete_created_workout(workout_id=workout_id, session=session)
@@ -386,7 +383,6 @@ async def delete_created_workout(
 @router.delete("/delete/exercise", dependencies=[Depends(current_user)])
 async def delete_created_exercise(
         exercise_id: int,
-        # user: User = Depends(current_user),
         session: AsyncSession = Depends(get_async_session)
 ):
     await exercise_service.delete_created_exercise(session=session, exercise_id=exercise_id)
@@ -401,7 +397,6 @@ async def delete_created_exercise(
 async def delete_added_workout(
         workout_id: int,
         user_id: int,
-        # user: User = Depends(current_user),
         session: AsyncSession = Depends(get_async_session)
 ):
     try:
@@ -422,7 +417,6 @@ async def delete_added_workout(
 async def delete_added_sets(
         exercise_id: int,
         user_id: int,
-        # user: User = Depends(current_user),
         session: AsyncSession = Depends(get_async_session)
 ):
     try:
@@ -443,7 +437,6 @@ async def delete_added_sets(
 async def delete_photo(
         exercise_id: int,
         photo_ids: list[int] = Query(),
-        # user: User = Depends(current_user),
         session: AsyncSession = Depends(get_async_session)
 ):
     try:
