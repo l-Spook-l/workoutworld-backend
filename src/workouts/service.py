@@ -1,10 +1,12 @@
-from fastapi import UploadFile, HTTPException
+import os
 
+from fastapi import UploadFile, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.workouts.models import Exercise, Workout
+from src.workouts.models import Exercise
 from src.workouts.repository import ExerciseRepository, WorkoutRepository, SetRepository
-from src.workouts.schemas import WorkoutCreate
+from src.workouts.schemas import WorkoutCreate, WorkoutUpdate, ExerciseUpdate, SetUpdate
+from src.users.service import user_repo
 
 
 class WorkoutService:
@@ -16,24 +18,31 @@ class WorkoutService:
         await session.commit()
         return workout_id
 
-    async def get_filtered_workouts(self,
-                                    session,
-                                    name: str | None = None,
-                                    difficulty: list[str] | None = None,
-                                    skip: int = 0,
-                                    limit: int = 12
-                                    ):
+    async def get_filtered_workouts(
+            self,
+            session: AsyncSession,
+            user_id: int | None = None,
+            name: str | None = None,
+            difficulty: list[str] | None = None,
+            skip: int = 0,
+            limit: int = 12,
+            is_public: bool | None = None
+    ):
         workouts = await self.repo.get_workouts(
             session=session,
+            user_id=user_id,
             name=name,
             difficulty=difficulty,
             skip=skip,
             limit=limit,
+            is_public=is_public
         )
         total_count = await self.repo.count_workouts(
             session=session,
+            user_id=user_id,
             name=name,
             difficulty=difficulty,
+            is_public=is_public
         )
         return workouts, total_count
 
