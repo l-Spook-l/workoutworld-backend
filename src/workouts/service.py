@@ -213,26 +213,26 @@ class SetService:
     def __init__(self, repo: SetRepository):
         self.repo = repo
 
-    async def create_set(self, session: AsyncSession, number_sets: int, data):
-        await self.repo.create_set(session, number_sets, data)
-        await session.commit()
+    async def create_set(self, number_sets: int, data: SetCreate):
+        new_set = await self.repo.create_set(number_sets=number_sets, data=data)
+        await self.repo.session.commit()
+        return new_set
 
-    async def get_sets(self, session: AsyncSession, user_id: int, exercise_ids: list[int]):
-        sets = await self.repo.get_sets(session, user_id, exercise_ids)
+    async def get_sets(self, user_id: int, exercise_ids: list[int]):
+        sets = await self.repo.get_sets(user_id=user_id, exercise_ids=exercise_ids)
         return sets
 
-    async def update_set(self, session: AsyncSession, set_id: int, data: SetUpdate):
-        await self.repo.update_set(session, set_id, data)
-        await session.commit()
+    async def update_set(self, set_id: int, data: SetUpdate):
+        await self.repo.update_set(set_id=set_id, update_data=data)
+        await self.repo.session.commit()
 
-    async def delete_set(self, session: AsyncSession, exercise_id: int, user_id: int):
-        await self.repo.delete_set(session=session, exercise_id=exercise_id, user_id=user_id)
-        await session.commit()
+    async def delete_set(self, exercise_id: int, user_id: int):
+        await self.repo.delete_set(exercise_id=exercise_id, user_id=user_id)
+        await self.repo.session.commit()
 
 
 workout_repo = WorkoutRepository()
 exercise_repo = ExerciseRepository()
-set_repo = SetRepository()
 
 workout_service = WorkoutService(workout_repo)
 exercise_service = ExerciseService(exercise_repo)
