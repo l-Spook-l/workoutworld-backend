@@ -241,25 +241,30 @@ class ExerciseRepository:
 
 
 class SetRepository:
-    @staticmethod
-    async def create_set(session: AsyncSession, number_sets: int, data):
-        for _ in range(number_sets):
-            stat = insert(Set).values(**data.model_dump())
-            await session.execute(stat)
+    def __init__(self, session: AsyncSession):
+        self.session = session
 
-    @staticmethod
-    async def get_sets(session: AsyncSession, user_id: int, exercise_ids: list[int]):
+    async def create_set(self, number_sets: int, data: SetCreate):
+        try:
+            for _ in range(number_sets):
+                stat = insert(Set).values(**data.model_dump())
+                await self.session.execute(stat)
+        except IntegrityError as exc:
+            log.exception(exc)
+
+    async def get_sets(self, user_id: int, exercise_ids: list[int]):
         query = select(Set).filter(Set.exercise_id.in_(exercise_ids)).filter(Set.user_id == user_id).order_by(Set.id)
-        result = await session.execute(query)
+        result = await self.session.execute(query)
         sets = result.mappings().all()
         return sets
 
-    @staticmethod
-    async def update_set(session: AsyncSession, set_id: int, update_data: SetUpdate):
-        query = update(Set).filter(Set.id == set_id).values(**update_data.model_dump(exclude_none=True))
-        await session.execute(query)
+    async def update_set(self, set_id: int, update_data: SetUpdate):
+        try:
+            query = update(Set).filter(Set.id == set_id).values(**update_data.model_dump(exclude_none=True))
+            await self.session.execute(query)
+        except IntegrityError as exc:
+            log.exception(exc)
 
-    @staticmethod
-    async def delete_set(session: AsyncSession, exercise_id: int, user_id: int):
+    async def delete_set(self, exercise_id: int, user_id: int):
         query = delete(Set).where((Set.exercise_id == exercise_id) and (Set.user_id == user_id))
-        await session.execute(query)
+        await self.session.execute(query)
