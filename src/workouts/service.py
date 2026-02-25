@@ -13,14 +13,16 @@ class WorkoutService:
     def __init__(self, repo: WorkoutRepository):
         self.repo = repo
 
-    async def create_workout(self, session: AsyncSession, form: WorkoutCreate):
-        workout_id = await self.repo.create_workout(session, form)
-        await session.commit()
-        return workout_id
+    async def create_workout(self, form: WorkoutCreate):
+        try:
+            workout_id = await self.repo.create_workout(form)
+            await self.repo.session.commit()
+            return workout_id
+        except WorkoutCreateError:
+            await self.repo.session.rollback()
 
     async def get_filtered_workouts(
             self,
-            session: AsyncSession,
             user_id: int | None = None,
             name: str | None = None,
             difficulty: list[str] | None = None,
@@ -29,7 +31,6 @@ class WorkoutService:
             is_public: bool | None = None
     ):
         workouts = await self.repo.get_workouts(
-            session=session,
             user_id=user_id,
             name=name,
             difficulty=difficulty,
@@ -38,7 +39,6 @@ class WorkoutService:
             is_public=is_public
         )
         total_count = await self.repo.count_workouts(
-            session=session,
             user_id=user_id,
             name=name,
             difficulty=difficulty,
@@ -46,29 +46,29 @@ class WorkoutService:
         )
         return workouts, total_count
 
-    async def add_user_workout_association(self, session, user, user_id, workout_id):
+    async def add_user_workout_association(self, user, user_id, workout_id):
         if user.id == user_id:
             raise HTTPException(status_code=400, detail="This workout cannot be added to the workout creator")
 
-        result_existing = await self.repo.get_user_workout_association(session, user_id, workout_id)
+        result_existing = await self.repo.get_user_workout_association(user_id, workout_id)
         if result_existing.scalar():
             raise HTTPException(status_code=400, detail="This workout is already added to the user")
 
-        association_created = await self.repo.add_user_workout_association(session, user_id, workout_id)
+        association_created = await self.repo.add_user_workout_association(user_id, workout_id)
         if not association_created:
             raise HTTPException(status_code=404, detail="User or Workout not found")
 
-        await session.commit()
+        await self.repo.session.commit()
 
-    async def get_one_workout(self, session: AsyncSession, workout_id: int, user_id: int = None):
-        workout = await self.repo.get_one_workout(session, workout_id)
+    async def get_one_workout(self, workout_id: int, user_id: int = None):
+        workout = await self.repo.get_one_workout(workout_id)
         if not workout.is_public and user_id != workout.user_id:
             raise HTTPException(status_code=403)
         return workout
 
-    async def get_active_workout(self, session: AsyncSession, workout_id: int, user_id: int):
-        workout = await self.get_one_workout(session, workout_id, user_id)
-        association_query_result = await self.repo.get_active_workout(session, workout_id, user_id)
+    async def get_active_workout(self, workout_id: int, user_id: int):
+        workout = await self.get_one_workout(workout_id, user_id)
+        association_query_result = await self.repo.get_active_workout(workout_id, user_id)
         if not association_query_result.first() and workout.user_id != user_id:
             raise HTTPException(status_code=403)
         return workout
@@ -87,7 +87,6 @@ class WorkoutService:
             raise HTTPException(status_code=404, detail="User not found")
 
         workouts = await self.repo.get_user_added_workouts(
-            session=session,
             user_id=user_id,
             name=name,
             difficulty=difficulty,
@@ -95,7 +94,6 @@ class WorkoutService:
             limit=limit,
         )
         total_count = await self.repo.count_user_added_workouts(
-            session=session,
             user_id=user_id,
             name=name,
             difficulty=difficulty
@@ -103,42 +101,41 @@ class WorkoutService:
 
         return workouts, total_count
 
-    async def get_workout_difficulties(self, session: AsyncSession):
-        workout_difficulties = await self.repo.get_workout_difficulties(session)
+    async def get_workout_difficulties(self):
+        workout_difficulties = await self.repo.get_workout_difficulties()
         return workout_difficulties
 
     async def update_workout(
             self,
             workout_id: int,
-            update_data: WorkoutUpdate,
-            session: AsyncSession
+            update_data: WorkoutUpdate
     ):
-        await self.repo.update_workout(session, workout_id, update_data)
-        await session.commit()
+        await self.repo.update_workout(workout_id, update_data)
+        await self.repo.session.commit()
 
-    async def delete_created_workout(self, session: AsyncSession, workout_id: int):
-        workout = await self.repo.get_workout_by_id(session, workout_id)
+    async def delete_created_workout(self, workout_id: int):
+        workout = await self.repo.get_workout_by_id(workout_id)
         if not workout:
             raise HTTPException(status_code=404, detail="Workout not found")
 
-        exercises = await exercise_repo.get_exercises_by_workout_id(session, workout_id)
+        exercises = await self.repo.get_exercises_by_workout_id(workout_id)
         for exercise in exercises:
-            result_photos_exercise = await exercise_repo.get_photos_exercise_by_id(session, exercise.Exercise.id)
+            result_photos_exercise = await self.repo.get_photos_exercise_by_id(exercise.Exercise.id)
             for photo in result_photos_exercise:
                 photo_path = os.path.join(f'src/{photo.Exercise_photo.photo}')
                 if os.path.exists(photo_path):
                     os.remove(photo_path)
 
-        await self.repo.delete_created_workout_by_id(session, workout_id)
-        await session.commit()
+        await self.repo.delete_created_workout_by_id(workout_id)
+        await self.repo.session.commit()
 
-    async def delete_added_workout(self, session: AsyncSession, user_id: int, workout_id: int):
-        workout = await self.repo.get_workout_by_id(session, workout_id)
+    async def delete_added_workout(self, user_id: int, workout_id: int):
+        workout = await self.repo.get_workout_by_id(workout_id)
         if not workout:
             raise HTTPException(status_code=404, detail="Workout not found")
 
-        await self.repo.delete_added_workout(session=session, user_id=user_id, workout_id=workout_id)
-        await session.commit()
+        await self.repo.delete_added_workout(user_id=user_id, workout_id=workout_id)
+        await self.repo.session.commit()
 
 
 class ExerciseService:
