@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.workouts.models import Exercise
 from src.workouts.repository import ExerciseRepository, WorkoutRepository, SetRepository
-from src.workouts.schemas import WorkoutCreate, WorkoutUpdate, ExerciseUpdate, SetUpdate
+from src.workouts.schemas import WorkoutCreate, WorkoutUpdate, ExerciseUpdate, SetUpdate, SetCreate
 from src.users.service import user_repo
 
 
@@ -145,68 +145,60 @@ class ExerciseService:
     def __init__(self, repo: ExerciseRepository):
         self.repo = repo
 
-    async def create_exercise(self, session: AsyncSession, form, photos: list[UploadFile] | None = None):
+    async def create_exercise(self, form, photos: list[UploadFile] | None = None) -> int:
         if form.video and (not form.video.startswith("<iframe") or not form.video.endswith("iframe>")):
             form.video = ""
 
-        exercise_id = await self.repo.create_exercise(session, form)
-
+        exercise_id = await self.repo.create_exercise(form)
         if photos:
-            await self.repo.save_photos(session, exercise_id, form.name, photos)
+            await self.repo.save_photos(exercise_id, form.name, photos)
 
-        await session.commit()
+        await self.repo.session.commit()
         return exercise_id
 
-    async def add_new_photos_exercise(self, session, exercise_id: int, exercise_name: str, photos: list):
-        exercise = await session.get(Exercise, exercise_id)
+    async def add_new_photos_exercise(self, exercise_id: int, exercise_name: str, photos: list):
+        exercise = await self.repo.session.get(Exercise, exercise_id)  # TODO - а тут ли оно должно быть?
         if not exercise:
             raise HTTPException(status_code=404, detail="Exercise not found")
-
         if photos:
-            await self.repo.save_photos(session, exercise_id, exercise_name, photos)
-        await session.commit()
+            await self.repo.save_photos(exercise_id, exercise_name, photos)
+        await self.repo.session.commit()
 
-    async def update_exercise(
-            self,
-            session: AsyncSession,
-            exercise_id: int,
-            update_data: ExerciseUpdate,
-
-    ):
+    async def update_exercise(self, exercise_id: int, update_data: ExerciseUpdate):
         if update_data.video:
             if update_data.video[:7] != "<iframe" or update_data.video[-7:] != "iframe>":
                 update_data.video = ""
 
-        await self.repo.update_exercise(session, exercise_id, update_data)
-        await session.commit()
+        await self.repo.update_exercise(exercise_id, update_data)
+        await self.repo.session.commit()
 
-    async def delete_created_exercise(self, session: AsyncSession, exercise_id: int):
-        exercise = await self.repo.get_exercise_by_id(session=session, exercise_id=exercise_id)
+    async def delete_created_exercise(self, exercise_id: int):
+        exercise = await self.repo.get_exercise_by_id(exercise_id=exercise_id)
         if not exercise:
             raise HTTPException(status_code=404, detail="Exercise not found")
 
-        result_photos_exercise = await self.repo.get_photos_exercise_by_id(session=session, exercise_id=exercise_id)
+        result_photos_exercise = await self.repo.get_photos_exercise_by_id(exercise_id=exercise_id)
         for photo in result_photos_exercise:
             photo_path = os.path.join(f'src/{photo.Exercise_photo.photo}')
             if os.path.exists(photo_path):
                 os.remove(photo_path)
 
-        await self.repo.delete_created_exercise_by_id(session=session, exercise_id=exercise_id)
-        await session.commit()
+        await self.repo.delete_created_exercise_by_id(exercise_id=exercise_id)
+        await self.repo.session.commit()
 
-    async def delete_photo(self, session: AsyncSession, exercise_id: int, photo_ids: list[int]):
-        exercise = await self.repo.get_exercise_by_id(session=session, exercise_id=exercise_id)
+    async def delete_photo(self, exercise_id: int, photo_ids: list[int]):
+        exercise = await self.repo.get_exercise_by_id(exercise_id=exercise_id)
         if not exercise:
             raise HTTPException(status_code=404, detail="Exercise not found")
 
-        photos = await self.repo.get_photos_by_ids(session=session, photo_ids=photo_ids)
+        photos = await self.repo.get_photos_by_ids(photo_ids=photo_ids)
         for photo in photos:
             photo_path = f"src/{photo["Exercise_photo"].photo}"
             if os.path.exists(photo_path):
                 os.remove(photo_path)
 
-        await self.repo.delete_photos_by_ids(session=session, photo_ids=photo_ids)
-        await session.commit()
+        await self.repo.delete_photos_by_ids(photo_ids=photo_ids)
+        await self.repo.session.commit()
 
 
 class SetService:
@@ -229,11 +221,3 @@ class SetService:
     async def delete_set(self, exercise_id: int, user_id: int):
         await self.repo.delete_set(exercise_id=exercise_id, user_id=user_id)
         await self.repo.session.commit()
-
-
-workout_repo = WorkoutRepository()
-exercise_repo = ExerciseRepository()
-
-workout_service = WorkoutService(workout_repo)
-exercise_service = ExerciseService(exercise_repo)
-set_service = SetService(set_repo)
