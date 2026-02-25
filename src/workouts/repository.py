@@ -4,6 +4,7 @@ import aiofiles
 from sqlalchemy import insert, select, func, update, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
+from sqlalchemy.exc import IntegrityError
 
 from src.users.service import user_repo
 from src.workouts.models import Exercise, Exercise_photo, Workout, Set, added_workouts_association, DifficultyWorkout
@@ -11,21 +12,29 @@ from src.workouts.schemas import WorkoutUpdate, ExerciseUpdate, SetUpdate
 
 
 class WorkoutRepository:
-    @staticmethod
-    async def create_workout(session: AsyncSession, data):
-        stat = insert(Workout).values(**data.model_dump()).returning(Workout.id)
-        result = await session.execute(stat)
-        workout_id = result.scalar()
-        return workout_id
+    def __init__(self, session: AsyncSession):
+        self.session = session
 
-    @staticmethod
-    async def update_workout(session: AsyncSession, workout_id: int, data: WorkoutUpdate):
-        query = update(Workout).filter(Workout.id == workout_id).values(**data.model_dump(exclude_none=True))
-        await session.execute(query)
+    async def create_workout(self, data):
+        try:
+            stat = insert(Workout).values(**data.model_dump()).returning(Workout.id)
+            result = await self.session.execute(stat)
+            workout_id = result.scalar()
+            return workout_id
+        except IntegrityError as exc:
+            log.exception("Integrity error while creating workout: %s", exc)
+            raise WorkoutCreateError
 
-    @staticmethod
+    async def update_workout(self, workout_id: int, data: WorkoutUpdate):
+        try:
+            query = update(Workout).filter(Workout.id == workout_id).values(**data.model_dump(exclude_none=True))
+            await self.session.execute(query)
+        except IntegrityError as exc:
+            log.exception(exc)
+            # raise
+
     async def get_workouts(
-            session: AsyncSession,
+            self,
             user_id: int | None = None,
             name: str | None = None,
             difficulty: list[str] | None = None,
@@ -43,13 +52,12 @@ class WorkoutRepository:
         if is_public is not None:
             query = query.filter(Workout.is_public == is_public)
         query = query.limit(limit).offset(skip)
-        result = await session.execute(query)
+        result = await self.session.execute(query)
         workouts = result.mappings().all()
         return workouts
 
-    @staticmethod
     async def count_workouts(
-            session: AsyncSession,
+            self,
             user_id: int | None = None,
             name: str | None = None,
             difficulty: list[str] | None = None,
@@ -65,59 +73,57 @@ class WorkoutRepository:
         if is_public is not None:
             query = query.filter(Workout.is_public == is_public)
 
-        total = await session.scalar(query)
+        total = await self.session.scalar(query)
         return total
 
-    @staticmethod
-    async def get_user_workout_association(session: AsyncSession, user_id, workout_id):
+    async def get_user_workout_association(self, user_id, workout_id):
         stmt = select(added_workouts_association).where(
             (added_workouts_association.c.user_table == user_id) &
             (added_workouts_association.c.workout_table == workout_id)
         )
-        return await session.execute(stmt)
+        return await self.session.execute(stmt)
 
-    @staticmethod
-    async def add_user_workout_association(session: AsyncSession, user_id, workout_id):
-        user = await user_repo.get_user_by_id(session, user_id)
+    async def add_user_workout_association(self, user_id, workout_id):
+        try:
+            user = await user_repo.get_user_by_id(self.session, user_id)
 
-        query_workout = select(Workout).filter(Workout.id == workout_id)
-        result_workout = await session.execute(query_workout)
-        workout = result_workout.first()
+            query_workout = select(Workout).filter(Workout.id == workout_id)
+            result_workout = await self.session.execute(query_workout)
+            workout = result_workout.first()
 
-        if not user or not workout:
-            return None
+            if not user or not workout:
+                return None
 
-        new_association = insert(added_workouts_association).values(user_table=user_id, workout_table=workout_id)
-        await session.execute(new_association)
+            new_association = insert(added_workouts_association).values(user_table=user_id, workout_table=workout_id)
+            await self.session.execute(new_association)
 
-        return True
+            return True
+        except IntegrityError as exc:
+            log.exception(exc)
+            raise
 
-    @staticmethod
-    async def get_workout_by_id(session: AsyncSession, workout_id: int):
-        return await session.get(Workout, workout_id)
+    async def get_workout_by_id(self, workout_id: int):
+        return await self.session.get(Workout, workout_id)
 
-    @staticmethod
-    async def get_one_workout(session: AsyncSession, workout_id: int) -> Workout | None:
+    async def get_one_workout(self, workout_id: int) -> Workout | None:
         query = select(Workout).filter(Workout.id == workout_id).options(
             selectinload(Workout.exercise).options(selectinload(Exercise.photo)))
-        result = await session.execute(query)
+        result = await self.session.execute(query)
         # mapping = result.mappings().one()
         mapping = result.mappings().first()
         workout = mapping["Workout"] if mapping else None
         return workout
 
-    @staticmethod
-    async def get_active_workout(session: AsyncSession, workout_id: int, user_id: int):
+    async def get_active_workout(self, workout_id: int, user_id: int):
         association_query = select(added_workouts_association).filter(
             added_workouts_association.c.workout_table == workout_id,
             added_workouts_association.c.user_table == user_id)
 
-        association_query_result = await session.execute(association_query)
+        association_query_result = await self.session.execute(association_query)
         return association_query_result
 
-    @staticmethod
     async def get_user_added_workouts(
-            session: AsyncSession,
+            self,
             user_id: int | None = None,
             name: str | None = None,
             difficulty: list[str] | None = None,
@@ -133,13 +139,12 @@ class WorkoutRepository:
             query = query.filter(Workout.difficulty.in_(difficulty))
 
         query = query.limit(limit).offset(skip)
-        result = await session.execute(query)
+        result = await self.session.execute(query)
         user_workouts = result.mappings().all()
         return user_workouts
 
-    @staticmethod
     async def count_user_added_workouts(
-            session: AsyncSession,
+            self,
             user_id: int,
             name: str | None = None,
             difficulty: list[str] | None = None
@@ -154,19 +159,31 @@ class WorkoutRepository:
             query = query.filter(Workout.name.ilike(f"%{name}%"))
         if difficulty:
             query = query.filter(Workout.difficulty.in_(difficulty))
-        return await session.scalar(query)
+        return await self.session.scalar(query)
 
-    @staticmethod
-    async def get_workout_difficulties(session: AsyncSession):
+    async def get_workout_difficulties(self):
         query = select(DifficultyWorkout)
-        result = await session.execute(query)
+        result = await self.session.execute(query)
         workout_difficulties = result.mappings().all()
         return workout_difficulties
 
-    @staticmethod
-    async def delete_created_workout_by_id(session: AsyncSession, workout_id: int):
-        query = delete(Workout).filter(Workout.id == workout_id)
-        await session.execute(query)
+    async def get_exercises_by_workout_id(self, workout_id: int):
+        query = await self.session.execute(select(Exercise).filter(Exercise.workout_id == workout_id))
+        exercises = query.mappings().all()
+        return exercises
+
+    async def get_photos_exercise_by_id(self, exercise_id: int):
+        photos_exercise = await self.session.execute(
+            select(Exercise_photo).filter(Exercise_photo.exercise_id == exercise_id))
+        result_photos_exercise = photos_exercise.mappings().all()
+        return result_photos_exercise
+
+    async def delete_created_workout_by_id(self, workout_id: int):
+        try:
+            query = delete(Workout).filter(Workout.id == workout_id)
+            await self.session.execute(query)
+        except IntegrityError as exc:
+            log.exception(exc)
 
     @staticmethod
     async def delete_added_workout(session: AsyncSession, user_id: int, workout_id: int):
@@ -175,6 +192,15 @@ class WorkoutRepository:
             (added_workouts_association.c.user_table == user_id)
         )
         await session.execute(query)
+    async def delete_added_workout(self, user_id: int, workout_id: int):
+        try:
+            query = delete(added_workouts_association).where(
+                (added_workouts_association.c.workout_table == workout_id) &
+                (added_workouts_association.c.user_table == user_id)
+            )
+            await self.session.execute(query)
+        except IntegrityError as exc:
+            log.exception(exc)
 
 
 class ExerciseRepository:
