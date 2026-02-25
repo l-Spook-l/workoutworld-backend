@@ -5,10 +5,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm.exc import NoResultFound
 
 from src.core.database import get_async_session
+from src.core.dependencies import get_workout_service, get_exercise_service, get_set_service
 from src.users.base_config import current_user
 from src.users.models import User
 from src.workouts.schemas import WorkoutCreate, ExerciseCreate, SetCreate, WorkoutUpdate, ExerciseUpdate, SetUpdate
-from src.workouts.service import exercise_service, workout_service, set_service
+from src.workouts.service import WorkoutService, ExerciseService, SetService
 
 router = APIRouter(
     prefix="/workouts",
@@ -19,17 +20,10 @@ router = APIRouter(
 @router.post("/create_workout", dependencies=[Depends(current_user)])
 async def add_workout(
         new_workout: WorkoutCreate,
-        session: AsyncSession = Depends(get_async_session)
+        service: WorkoutService = Depends(get_workout_service),
 ):
-    try:
-        workout_id = await workout_service.create_workout(session, new_workout)
-        return {"status": "success", "workout_ID": workout_id}
-    except Exception:
-        raise HTTPException(status_code=500, detail={
-            "status": "error",
-            "data": None,
-            "details": None,
-        })
+    workout_id = await service.create_workout(new_workout)
+    return {"status": "success", "workout_ID": workout_id}
 
 
 @router.post("/create_exercise", dependencies=[Depends(current_user)])
@@ -43,7 +37,7 @@ async def add_video_exercise(
         video: str = Form(None),
         photos: list[UploadFile] = None,
         number_in_workout: int = Form(...),
-        session: AsyncSession = Depends(get_async_session)
+        service: ExerciseService = Depends(get_exercise_service),
 ):
     try:
         exercise_data = ExerciseCreate(
@@ -57,7 +51,7 @@ async def add_video_exercise(
             number_in_workout=number_in_workout,
         )
 
-        exercise_id = await exercise_service.create_exercise(session, exercise_data, photos)
+        exercise_id = await service.create_exercise(exercise_data, photos)
         return {"status": "success", "exercise_ID": exercise_id}
     except ValidationError as e:
         error_messages = []
@@ -72,10 +66,10 @@ async def add_video_exercise(
 async def add_set(
         number_sets: int,
         new_set: SetCreate,
-        session: AsyncSession = Depends(get_async_session)
+        service: SetService = Depends(get_set_service),
 ):
     try:
-        await set_service.create_set(session, number_sets, new_set)
+        await service.create_set(number_sets, new_set)
         return {"status": "success"}
     except Exception:
         raise HTTPException(status_code=500, detail={
@@ -90,11 +84,10 @@ async def add_workout_to_user(
         user_id: int,
         workout_id: int,
         user: User = Depends(current_user),
-        session: AsyncSession = Depends(get_async_session)
+        service: WorkoutService = Depends(get_workout_service),
 ):
     # TODO try: - проблема с ошибками
-    await workout_service.add_user_workout_association(session, user, user_id, workout_id)
-    await session.commit()
+    await service.add_user_workout_association(user, user_id, workout_id)
 
     return {"status": "success", "message": "Workout added to user"}
     # except Exception:
@@ -110,10 +103,10 @@ async def add_new_photos_exercise(
         exercise_id: int,
         exercise_name: str,
         photos: list[UploadFile] = None,
-        session: AsyncSession = Depends(get_async_session)
+        service: ExerciseService = Depends(get_exercise_service),
 ):
     try:
-        await exercise_service.add_new_photos_exercise(session, exercise_id, exercise_name, photos)
+        await service.add_new_photos_exercise(exercise_id, exercise_name, photos)
         return {"status": "success", "exercise_ID": exercise_id}
     except ValidationError as e:
         raise HTTPException(status_code=422, detail=e)
@@ -126,11 +119,10 @@ async def get_workouts(
         skip: int = Query(0, description="Number of records to skip"),
         limit: int = Query(12, description="Number of records to return"),
         page: int = Query(1, description="Page number"),
-        session: AsyncSession = Depends(get_async_session)
+        service: WorkoutService = Depends(get_workout_service),
 ):
     try:
-        workouts, total_count = await workout_service.get_filtered_workouts(
-            session=session,
+        workouts, total_count = await service.get_filtered_workouts(
             name=name,
             difficulty=difficulty,
             skip=skip,
@@ -154,9 +146,13 @@ async def get_workouts(
 
 
 @router.get("/workout/{workout_id}")
-async def get_one_workout(workout_id: int, user_id: int = None, session: AsyncSession = Depends(get_async_session)):
+async def get_one_workout(
+        workout_id: int,
+        user_id: int = None,
+        service: WorkoutService = Depends(get_workout_service),
+):
     try:
-        workout = await workout_service.get_one_workout(session, workout_id, user_id)
+        workout = await service.get_one_workout(workout_id, user_id)
         return {
             "status": "success",
             "data": workout,
@@ -175,10 +171,10 @@ async def get_one_workout(workout_id: int, user_id: int = None, session: AsyncSe
 async def get_active_workout(
         workout_id: int,
         user_id: int,
-        session: AsyncSession = Depends(get_async_session)
+        service: WorkoutService = Depends(get_workout_service),
 ):
     try:
-        workout = await workout_service.get_active_workout(session, workout_id, user_id)
+        workout = await service.get_active_workout(workout_id, user_id)
         return {
             "status": "success",
             "data": workout,
@@ -203,11 +199,10 @@ async def get_user_workouts(
         limit: int = Query(9, description="Number of records to return"),
         is_public: bool = Query(None, description="Filter by status"),
         page: int = Query(1, description="Page number"),
-        session: AsyncSession = Depends(get_async_session)
+        service: WorkoutService = Depends(get_workout_service),
 ):
     try:
-        user_workouts, total_count = await workout_service.get_filtered_workouts(
-            session=session,
+        user_workouts, total_count = await service.get_filtered_workouts(
             user_id=user_id,
             name=name,
             difficulty=difficulty,
@@ -240,10 +235,11 @@ async def get_user_added_workouts(
         skip: int = Query(0, description="Number of records to skip"),
         limit: int = Query(9, description="Number of records to return"),
         page: int = Query(1, description="Page number"),
+        service: WorkoutService = Depends(get_workout_service),
         session: AsyncSession = Depends(get_async_session)
 ):
     try:
-        user_workouts, total_count = await workout_service.get_user_added_workouts(
+        user_workouts, total_count = await service.get_user_added_workouts(
             session=session,
             user_id=user_id,
             name=name,
@@ -270,9 +266,11 @@ async def get_user_added_workouts(
 
 
 @router.get("/workout-difficulties")
-async def get_difficulties(session: AsyncSession = Depends(get_async_session)):
+async def get_difficulties(
+        service: WorkoutService = Depends(get_workout_service),
+):
     try:
-        difficulties = await workout_service.get_workout_difficulties(session=session)
+        difficulties = await service.get_workout_difficulties()
         return {
             "status": "success",
             "data": difficulties,
@@ -290,10 +288,10 @@ async def get_difficulties(session: AsyncSession = Depends(get_async_session)):
 async def get_sets(
         user_id: int,
         exercise_ids: list[int] = Query(None),
-        session: AsyncSession = Depends(get_async_session)
+        service: SetService = Depends(get_set_service),
 ):
     try:
-        sets = await set_service.get_sets(session, user_id, exercise_ids)
+        sets = await service.get_sets(user_id, exercise_ids)
         return {
             "status": "success",
             "data": sets,
@@ -312,10 +310,10 @@ async def get_sets(
 async def update_workout(
         workout_id: int,
         update_data: WorkoutUpdate,
-        session: AsyncSession = Depends(get_async_session)
+        service: WorkoutService = Depends(get_workout_service),
 ):
     try:
-        await workout_service.update_workout(workout_id, update_data, session)
+        await service.update_workout(workout_id, update_data)
         return {
             "status": "success",
             "details": None,
@@ -332,10 +330,10 @@ async def update_workout(
 async def update_exercise(
         exercise_id: int,
         update_data: ExerciseUpdate,
-        session: AsyncSession = Depends(get_async_session)
+        service: ExerciseService = Depends(get_exercise_service),
 ):
     try:
-        await exercise_service.update_exercise(session, exercise_id, update_data)
+        await service.update_exercise(exercise_id, update_data)
         return {
             "status": "success",
             "details": None,
@@ -352,10 +350,10 @@ async def update_exercise(
 async def update_set(
         set_id: int,
         update_data: SetUpdate,
-        session: AsyncSession = Depends(get_async_session)
+        service: SetService = Depends(get_set_service),
 ):
     try:
-        await set_service.update_set(session=session, set_id=set_id, data=update_data)
+        await service.update_set(set_id=set_id, data=update_data)
         return {
             "status": "success",
             "details": None,
@@ -371,9 +369,9 @@ async def update_set(
 @router.delete("/delete/created-workout", dependencies=[Depends(current_user)])
 async def delete_created_workout(
         workout_id: int,
-        session: AsyncSession = Depends(get_async_session)
+        service: WorkoutService = Depends(get_workout_service),
 ):
-    await workout_service.delete_created_workout(workout_id=workout_id, session=session)
+    await service.delete_created_workout(workout_id=workout_id)
     return {
         "status": "success",
         "details": None,
@@ -383,9 +381,9 @@ async def delete_created_workout(
 @router.delete("/delete/exercise", dependencies=[Depends(current_user)])
 async def delete_created_exercise(
         exercise_id: int,
-        session: AsyncSession = Depends(get_async_session)
+        service: ExerciseService = Depends(get_exercise_service),
 ):
-    await exercise_service.delete_created_exercise(session=session, exercise_id=exercise_id)
+    await service.delete_created_exercise(exercise_id=exercise_id)
     return {
         "status": "success",
         "details": None,
@@ -397,10 +395,10 @@ async def delete_created_exercise(
 async def delete_added_workout(
         workout_id: int,
         user_id: int,
-        session: AsyncSession = Depends(get_async_session)
+        service: WorkoutService = Depends(get_workout_service),
 ):
     try:
-        await workout_service.delete_added_workout(session=session, user_id=user_id, workout_id=workout_id)
+        await service.delete_added_workout(user_id=user_id, workout_id=workout_id)
         return {
             "status": "success",
             "details": None,
@@ -417,10 +415,10 @@ async def delete_added_workout(
 async def delete_added_sets(
         exercise_id: int,
         user_id: int,
-        session: AsyncSession = Depends(get_async_session)
+        service: SetService = Depends(get_set_service),
 ):
     try:
-        await set_service.delete_set(session=session, exercise_id=exercise_id, user_id=user_id)
+        await service.delete_set(exercise_id=exercise_id, user_id=user_id)
         return {
             "status": "success",
             "details": None,
@@ -437,10 +435,10 @@ async def delete_added_sets(
 async def delete_photo(
         exercise_id: int,
         photo_ids: list[int] = Query(),
-        session: AsyncSession = Depends(get_async_session)
+        service: ExerciseService = Depends(get_exercise_service),
 ):
     try:
-        await exercise_service.delete_photo(session=session, exercise_id=exercise_id, photo_ids=photo_ids)
+        await service.delete_photo(exercise_id=exercise_id, photo_ids=photo_ids)
         return {
             "status": "success",
             "details": None,
