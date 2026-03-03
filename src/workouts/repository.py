@@ -220,16 +220,9 @@ class ExerciseRepository:
         photos = result.mappings().all()
         return photos
 
-    # TODO перенести в слов сервиса т.к. это работа с файловой системой
-    async def save_photos(self, exercise_id: int, exercise_name: str, photos: list):
-        for photo in photos:
-            photo.filename = photo.filename.lower()
-            path_photo = f"src/media/Photos_exercise/{exercise_id}_{exercise_name}_{uuid4()}.png"
-            async with aiofiles.open(path_photo, "+wb") as buffer:
-                data = await photo.read()
-                await buffer.write(data)
-            add_photo = insert(Exercise_photo).values(photo=path_photo[4:], exercise_id=exercise_id)
-            await self.session.execute(add_photo)
+    async def add_photo(self, exercise_id: int, path: str):
+        stat = insert(Exercise_photo).values(photo=path, exercise_id=exercise_id)
+        await self.session.execute(stat)
 
     async def delete_created_exercise_by_id(self, exercise_id: int):
         await self.session.execute(delete(Exercise).where(Exercise.id == exercise_id))
