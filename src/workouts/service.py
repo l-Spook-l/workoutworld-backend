@@ -143,12 +143,19 @@ class WorkoutService:
         await self.repo.session.commit()
 
     async def delete_added_workout(self, user_id: int, workout_id: int):
-        workout = await self.repo.get_workout_by_id(workout_id)
-        if not workout:
-            raise HTTPException(status_code=404, detail="Workout not found")
+        try:
+            workout = await self.repo.get_workout_by_id(workout_id)
+            if not workout:
+                raise NotFoundError(detail="Workout not found")
 
-        await self.repo.delete_added_workout(user_id=user_id, workout_id=workout_id)
-        await self.repo.session.commit()
+            await self.repo.delete_added_workout(user_id=user_id, workout_id=workout_id)
+            await self.repo.session.commit()
+        except AppError:
+            await self.repo.session.rollback()
+            raise
+        except Exception as e:
+            await self.repo.session.rollback()
+            raise BadRequestError(f"Unexpected error: {str(e)}")
 
 
 class ExerciseService:
@@ -156,15 +163,56 @@ class ExerciseService:
         self.repo = repo
 
     async def create_exercise(self, form, photos: list[UploadFile] | None = None) -> int:
-        if form.video and (not form.video.startswith("<iframe") or not form.video.endswith("iframe>")):
-            form.video = ""
+        saved_paths = []
+        try:
+            video = None
+            if form.video and form.video.startswith("<iframe") and form.video.endswith("iframe>"):
+                video = form.video
 
-        exercise_id = await self.repo.create_exercise(form)
-        if photos:
-            await self.repo.save_photos(exercise_id, form.name, photos)
+            data = form.model_dump(exclude_none=True)
+            data["video"] = video
 
-        await self.repo.session.commit()
-        return exercise_id
+            exercise_id = await self.repo.create_exercise(data=data)
+            if photos:
+                saved_paths = await self._save_photos(exercise_id, form.name, photos)
+            await self.repo.session.commit()
+            return exercise_id
+
+        except Exception as e:
+            await self.repo.session.rollback()
+            # удалить сохранённые файлы если были
+            for path in saved_paths:
+                if os.path.exists(path):
+                    os.remove(path)
+            raise BadRequestError(f"Unexpected error: {str(e)}")
+
+    async def _save_photos(
+            self,
+            exercise_id: int,
+            exercise_name: str,
+            photos: list[UploadFile]
+    ) -> list:
+        media_path = Path("src/media/Photos_exercise")
+        media_path.mkdir(parents=True, exist_ok=True)
+        saved_files = []
+
+        for photo in photos:
+            ext = photo.filename.split(".")[-1].lower()
+            if ext not in ("jpg", "jpeg", "png", "webp"):
+                continue
+
+            filename = f"{exercise_id}_{exercise_name}_{uuid4()}.{ext}"
+            full_path = media_path / filename
+            saved_files.append(full_path)
+            async with aiofiles.open(full_path, "wb") as buffer:
+                while chunk := await photo.read(1024 * 1024):
+                    await buffer.write(chunk)
+
+            await self.repo.add_photo(
+                exercise_id=exercise_id,
+                path=str(full_path.relative_to("src"))
+            )
+        return saved_files
 
     async def add_new_photos_exercise(self, exercise_id: int, exercise_name: str, photos: list):
         try:
