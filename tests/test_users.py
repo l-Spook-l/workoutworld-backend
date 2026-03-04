@@ -7,12 +7,9 @@ from .conftest import async_session_maker, BaseTest
 
 async def test_add_roles():
     async with async_session_maker() as session:
-        stmt = insert(Role).values(id=1, name="admin")
-        await session.execute(stmt)
-        await session.commit()
+        await session.execute(insert(Role).values(id=1, name="admin"))
+        await session.execute(insert(Role).values(id=2, name="user"))
 
-        stmt = insert(Role).values(id=2, name="user")
-        await session.execute(stmt)
         await session.commit()
 
         query = select(Role.id, Role.name)

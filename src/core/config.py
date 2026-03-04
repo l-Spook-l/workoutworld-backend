@@ -21,6 +21,8 @@ DB_NAME_TEST = os.environ.get("DB_NAME_TEST")
 DATABASE_URL_TEST = \
     f"postgresql+asyncpg://{DB_USER_TEST}:{DB_PASSWORD_TEST}@{DB_HOST_TEST}:{DB_PORT_TEST}/{DB_NAME_TEST}"
 
+LOG_LEVEL = os.environ.get("LOG_LEVEL")
+
 REDIS_PORT = os.environ.get("REDIS_PORT")
 
 SECRET_KEY = os.environ.get("SECRET_KEY")

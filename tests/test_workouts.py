@@ -8,16 +8,10 @@ from .conftest import async_session_maker, BaseTest
 class TestDifficulties:
     async def test_add_difficulties(self):
         async with async_session_maker() as session:
-            stmt = insert(DifficultyWorkout).values(difficulty="Easy")
-            await session.execute(stmt)
-            await session.commit()
+            await session.execute(insert(DifficultyWorkout).values(difficulty="Easy"))
+            await session.execute(insert(DifficultyWorkout).values(difficulty="Medium"))
+            await session.execute(insert(DifficultyWorkout).values(difficulty="Hard"))
 
-            stmt = insert(DifficultyWorkout).values(difficulty="Medium")
-            await session.execute(stmt)
-            await session.commit()
-
-            stmt = insert(DifficultyWorkout).values(difficulty="Hard")
-            await session.execute(stmt)
             await session.commit()
 
             query = select(DifficultyWorkout.id, DifficultyWorkout.difficulty)
@@ -29,11 +23,11 @@ class TestDifficulties:
         response = await ac.get("/api/workouts/workout-difficulties")
 
         assert response.status_code == 200
-        assert response.json() == {'status': 'success', 'data': [{'DifficultyWorkout': {'difficulty': 'Easy', 'id': 1}},
-                                                                 {'DifficultyWorkout': {'difficulty': 'Medium',
-                                                                                        'id': 2}},
-                                                                 {'DifficultyWorkout': {'difficulty': 'Hard',
-                                                                                        'id': 3}}], 'details': None}
+        assert response.json() == {'status': 'success',
+                                   'data': [{'DifficultyWorkout': {'difficulty': 'Easy', 'id': 1}},
+                                            {'DifficultyWorkout': {'difficulty': 'Medium', 'id': 2}},
+                                            {'DifficultyWorkout': {'difficulty': 'Hard', 'id': 3}}],
+                                   'details': None}
 
 
 class TestCreateWorkout(BaseTest):
@@ -205,7 +199,7 @@ class TestDeleteWorkout(BaseTest):
         assert response.status_code == 200
         assert response.json() == {"status": "success", "details": None}
 
-    async def test_delete_workout(self, ac: AsyncClient, test_data):
+    async def test_delete_created_workout(self, ac: AsyncClient, test_data):
         headers = self.get_headers(user_id=test_data["first_user_id"])
         response = await ac.delete("/api/workouts/delete/created-workout", params={
             "workout_id": 1

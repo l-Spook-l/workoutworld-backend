@@ -1,8 +1,10 @@
 import logging
+
 from logging.handlers import RotatingFileHandler
+from src.core.config import LOG_LEVEL
 
-LOG_LEVEL = "INFO"
 
+LOG_LEVEL = LOG_LEVEL
 LOG_FORMAT = "%(asctime)s [%(levelname)s] %(name)s:%(lineno)d - %(message)s"
 LOG_FORMAT_DEBUG = "%(levelname)s:%(message)s:%(pathname)s:%(funcName)s:%(lineno)d"
 
@@ -35,5 +37,6 @@ def configure_logging():
     root.addHandler(file_handler)
 
     # отключаем спам uvicorn.access
-    logging.getLogger("uvicorn.access").propagate = False
+    logging.getLogger("uvicorn.error").setLevel(logging.INFO)
+
 
