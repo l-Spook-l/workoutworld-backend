@@ -127,20 +127,31 @@ class WorkoutService:
             raise e
 
     async def delete_created_workout(self, workout_id: int):
-        workout = await self.repo.get_workout_by_id(workout_id)
-        if not workout:
-            raise HTTPException(status_code=404, detail="Workout not found")
+        try:
+            workout = await self.repo.get_workout_by_id(workout_id)
+            if not workout:
+                raise NotFoundError(detail="Workout not found")
 
-        exercises = await self.repo.get_exercises_by_workout_id(workout_id)
-        for exercise in exercises:
-            result_photos_exercise = await self.repo.get_photos_exercise_by_id(exercise.Exercise.id)
-            for photo in result_photos_exercise:
-                photo_path = os.path.join(f'src/{photo.Exercise_photo.photo}')
-                if os.path.exists(photo_path):
-                    os.remove(photo_path)
+            exercises = await self.repo.get_exercises_by_workout_id(workout_id)
 
-        await self.repo.delete_created_workout_by_id(workout_id)
-        await self.repo.session.commit()
+            photo_paths = []
+            for exercise in exercises:
+                photos = await self.repo.get_photos_exercise_by_id(exercise.Exercise.id)
+                for photo in photos:
+                    photo_paths.append(os.path.join(f"src/{photo.Exercise_photo.photo}"))
+
+            await self.repo.delete_created_workout_by_id(workout_id)
+            await self.repo.session.commit()
+
+            for path in photo_paths:
+                if os.path.exists(path):
+                    os.remove(path)
+        except AppError:
+            await self.repo.session.rollback()
+            raise
+        except Exception as e:
+            await self.repo.session.rollback()
+            raise BadRequestError(f"Unexpected error: {str(e)}")
 
     async def delete_added_workout(self, user_id: int, workout_id: int):
         try:
