@@ -187,18 +187,27 @@ class ExerciseService:
         await self.repo.session.commit()
 
     async def delete_created_exercise(self, exercise_id: int):
-        exercise = await self.repo.get_exercise_by_id(exercise_id=exercise_id)
-        if not exercise:
-            raise HTTPException(status_code=404, detail="Exercise not found")
+        try:
+            exercise = await self.repo.get_exercise_by_id(exercise_id=exercise_id)
+            if not exercise:
+                raise NotFoundError(detail="Exercise not found")
 
-        result_photos_exercise = await self.repo.get_photos_exercise_by_id(exercise_id=exercise_id)
-        for photo in result_photos_exercise:
-            photo_path = os.path.join(f'src/{photo.Exercise_photo.photo}')
-            if os.path.exists(photo_path):
-                os.remove(photo_path)
+            photos = await self.repo.get_photos_exercise_by_id(exercise_id=exercise_id)
 
-        await self.repo.delete_created_exercise_by_id(exercise_id=exercise_id)
-        await self.repo.session.commit()
+            photo_paths = [
+                os.path.join(f"src/{photo.Exercise_photo.photo}")
+                for photo in photos
+            ]
+
+            await self.repo.delete_created_exercise_by_id(exercise_id=exercise_id)
+            await self.repo.session.commit()
+
+            for path in photo_paths:
+                if os.path.exists(path):
+                    os.remove(path)
+        except Exception:
+            await self.repo.session.rollback()
+            raise
 
     async def delete_photo(self, exercise_id: int, photo_ids: list[int]):
         exercise = await self.repo.get_exercise_by_id(exercise_id=exercise_id)
