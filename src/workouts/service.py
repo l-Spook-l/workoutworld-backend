@@ -179,12 +179,19 @@ class ExerciseService:
             raise BadRequestError(f"Unexpected error: {str(e)}")
 
     async def update_exercise(self, exercise_id: int, update_data: ExerciseUpdate):
-        if update_data.video:
-            if update_data.video[:7] != "<iframe" or update_data.video[-7:] != "iframe>":
-                update_data.video = ""
+        try:
+            if update_data.video:
+                if not (
+                        update_data.video.startswith("<iframe")
+                        and update_data.video.endswith("</iframe>")
+                ):
+                    update_data.video = None
 
-        await self.repo.update_exercise(exercise_id, update_data)
-        await self.repo.session.commit()
+            await self.repo.update_exercise(exercise_id, update_data)
+            await self.repo.session.commit()
+        except Exception as e:
+            await self.repo.session.rollback()
+            raise BadRequestError(f"Unexpected error: {str(e)}")
 
     async def delete_created_exercise(self, exercise_id: int):
         try:
