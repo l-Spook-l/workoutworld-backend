@@ -157,7 +157,7 @@ class TestGetWorkout(BaseTest):
 
 class TestAddWorkout(BaseTest):
     @pytest.mark.parametrize("user_id, expected_status_code, expected_detail", [
-        (1, 400, {"detail": "This workout cannot be added to the workout creator"}),
+        (1, 400, {"status": "error", "detail": "This workout cannot be added to the workout creator"}),
         (2, 200, {"status": "success", "message": "Workout added to user"}),
     ])
     async def test_add_workout_to_user(self, ac: AsyncClient, user_id, expected_status_code, expected_detail):
