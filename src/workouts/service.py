@@ -177,11 +177,14 @@ class ExerciseService:
         saved_paths = []
         try:
             video = None
-            if form.video and form.video.startswith("<iframe") and form.video.endswith("iframe>"):
+            if form.video and form.video.startswith("<iframe") and form.video.endswith("</iframe>"):
                 video = form.video
 
             data = form.model_dump(exclude_none=True)
-            data["video"] = video
+            if video:
+                data["video"] = video
+            else:
+                data.pop("video", None)
 
             exercise_id = await self.repo.create_exercise(data=data)
             if photos:
