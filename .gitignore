@@ -8,3 +8,4 @@ docker-compose.yml
 src/core/flower.py
 archive.py
 nginx.conf
+plan.txt
