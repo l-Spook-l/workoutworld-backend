@@ -2,7 +2,7 @@ from sqladmin import Admin, ModelView
 from src.users.models import User
 from src.workouts.models import Workout, Exercise, Set, Exercise_photo, DifficultyWorkout
 from src.core.database import engine
-from .auth import authentication_backend
+from src.admin.auth import authentication_backend
 
 
 class UserAdmin(ModelView, model=User):
