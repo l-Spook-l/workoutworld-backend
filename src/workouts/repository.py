@@ -190,8 +190,9 @@ class ExerciseRepository:
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    async def create_exercise(self, data) -> int:
-        stat = insert(Exercise).values(**data.model_dump(exclude_none=True)).returning(Exercise.id)
+    async def create_exercise(self, data: dict) -> int:
+        # stat = insert(Exercise).values(**data.model_dump(exclude_none=True)).returning(Exercise.id)
+        stat = insert(Exercise).values(**data).returning(Exercise.id)
         result = await self.session.execute(stat)
         return result.scalar_one()
 
