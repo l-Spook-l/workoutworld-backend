@@ -1,6 +1,6 @@
 import logging
 
-from fastapi import APIRouter, Depends, Query, UploadFile, Form
+from fastapi import APIRouter, Depends, Query, UploadFile, Form, File
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.database import get_async_session
@@ -26,15 +26,15 @@ async def add_workout(
 
 
 @router.post("/create_exercise", dependencies=[Depends(current_user)])
-async def add_video_exercise(
+async def add_exercise(
         name: str = Form(...),
         workout_id: int = Form(...),
         description: str = Form(...),
         number_of_sets: int = Form(...),
         maximum_repetitions: int = Form(...),
         rest_time: int = Form(...),
-        video: str = Form(None),
-        photos: list[UploadFile] | None = None,
+        video: str | None = Form(None),
+        photos: list[UploadFile] | None = File(None),
         number_in_workout: int = Form(...),
         service: ExerciseService = Depends(get_exercise_service),
 ):
