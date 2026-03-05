@@ -1,4 +1,4 @@
-from uuid import uuid4
+import logging
 
 from sqlalchemy import insert, select, func, update, delete
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -8,6 +8,8 @@ from src.core.exceptions.custom_exceptions import NotFoundError
 from src.users.service import user_repo
 from src.workouts.models import Exercise, Exercise_photo, Workout, Set, added_workouts_association, DifficultyWorkout
 from src.workouts.schemas import WorkoutUpdate, ExerciseUpdate, SetUpdate, SetCreate
+
+log = logging.getLogger(__name__)
 
 
 class WorkoutRepository:

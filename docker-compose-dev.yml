@@ -47,6 +47,8 @@ services:
       - .env-dev
     container_name: fastapi_app
     command: ["/fastapi_app/scripts/app_run.sh"]
+    volumes:
+      - .:/fastapi_app
     ports:
       - "8000:8000"
     networks:

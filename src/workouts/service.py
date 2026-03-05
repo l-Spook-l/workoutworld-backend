@@ -1,4 +1,5 @@
 import os
+import logging
 from pathlib import Path
 from uuid import uuid4
 
@@ -12,6 +13,8 @@ from src.workouts.models import Exercise
 from src.workouts.repository import ExerciseRepository, WorkoutRepository, SetRepository
 from src.workouts.schemas import WorkoutCreate, WorkoutUpdate, ExerciseUpdate, SetUpdate, SetCreate
 from src.users.service import user_repo
+
+log = logging.getLogger(__name__)
 
 
 class WorkoutService:

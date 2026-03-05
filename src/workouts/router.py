@@ -15,6 +15,8 @@ router = APIRouter(
     tags=["workouts"]
 )
 
+log = logging.getLogger(__name__)
+
 
 @router.post("/create_workout", dependencies=[Depends(current_user)])
 async def add_workout(
